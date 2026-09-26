@@ -63,9 +63,14 @@ export const useProfileStore = defineStore('profile', () => {
           )
         `)
         .eq('id', userId)
-        .single()
+        .maybeSingle()
 
       if (sbError) throw sbError
+
+      if (!data) {
+        profile.value = null
+        return
+      }
 
       const user = (data as Record<string, unknown>).users as {
         display_name: string | null
