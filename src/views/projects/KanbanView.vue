@@ -294,7 +294,9 @@ watch(selectedSprintId, async (newId) => {
 .kanban-page {
   min-height: 100vh;
   background: var(--su-bg);
-  padding: 1.5rem;
+  padding: 1.5rem 1.75rem 2.5rem;
+  max-width: 1600px;
+  margin: 0 auto;
   display: flex;
   flex-direction: column;
   gap: 1.25rem;
@@ -305,6 +307,8 @@ watch(selectedSprintId, async (newId) => {
   display: flex;
   align-items: flex-start;
   gap: 1rem;
+  padding-bottom: 1.1rem;
+  border-bottom: 1px solid var(--su-border);
 }
 
 .back-btn {
@@ -322,7 +326,7 @@ watch(selectedSprintId, async (newId) => {
 }
 
 .page-title {
-  font-size: 1.35rem;
+  font-size: 1.4rem;
   font-weight: 800;
   color: var(--su-purple-300);
   text-shadow: 0 0 8px rgba(168, 85, 247, 0.8);
@@ -334,6 +338,7 @@ watch(selectedSprintId, async (newId) => {
 
 .title-icon {
   color: var(--su-purple-400);
+  filter: drop-shadow(0 0 4px rgba(168,85,247,0.7));
 }
 
 .header-actions {
@@ -344,7 +349,7 @@ watch(selectedSprintId, async (newId) => {
 }
 
 .sprint-select {
-  min-width: 180px;
+  min-width: 190px;
 }
 
 /* Sprint selector focus/hover — supplement global theme overrides */
@@ -378,7 +383,7 @@ watch(selectedSprintId, async (newId) => {
 .kanban-board {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 1rem;
+  gap: 1.1rem;
   align-items: flex-start;
   flex: 1;
 }
@@ -392,7 +397,7 @@ watch(selectedSprintId, async (newId) => {
 
 @media (max-width: 600px) {
   .kanban-page {
-    padding: 1rem 0.75rem;
+    padding: 1rem 0.75rem 2rem;
   }
 
   .kanban-board {
@@ -412,64 +417,68 @@ watch(selectedSprintId, async (newId) => {
 .kanban-column {
   background: var(--su-bg-surface);
   border: 1px solid var(--su-border);
-  border-radius: 10px;
+  border-radius: 12px;
   display: flex;
   flex-direction: column;
-  min-height: 200px;
-  box-shadow: 0 0 0 1px var(--su-border), 0 0 12px 2px rgba(124, 58, 237, 0.1);
+  min-height: 260px;
+  box-shadow: 0 0 0 1px var(--su-border), 0 0 14px 2px rgba(124, 58, 237, 0.1);
   transition: box-shadow 0.2s;
 }
 
 /* Lift column on hover to signal it's a drop target */
 .kanban-column:focus-within {
-  box-shadow: 0 0 0 1px var(--su-border-glow), 0 0 16px 4px rgba(124, 58, 237, 0.25);
+  box-shadow: 0 0 0 1px var(--su-border-glow), 0 0 18px 4px rgba(124, 58, 237, 0.25);
 }
 
 .column-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0.7rem 0.9rem;
+  padding: 0.85rem 1rem;
   border-bottom: 1px solid var(--su-border);
-  border-radius: 10px 10px 0 0;
+  border-radius: 12px 12px 0 0;
+  background: linear-gradient(90deg, rgba(124,58,237,0.06) 0%, transparent 100%);
 }
 
 .column-header--active {
+  background: linear-gradient(90deg, rgba(245,158,11,0.1) 0%, transparent 100%);
   border-bottom-color: var(--su-warning);
   box-shadow: inset 0 -2px 0 0 var(--su-warning);
 }
 
 .column-header--done {
+  background: linear-gradient(90deg, rgba(34,197,94,0.1) 0%, transparent 100%);
   border-bottom-color: var(--su-success);
   box-shadow: inset 0 -2px 0 0 var(--su-success);
 }
 
 .column-title {
-  font-size: 0.85rem;
+  font-size: 0.82rem;
   font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.07em;
   color: var(--su-text-muted);
 }
 
 .column-count {
   background: rgba(124, 58, 237, 0.2);
   color: var(--su-purple-300);
+  border: 1px solid rgba(124,58,237,0.3);
   border-radius: 999px;
   font-size: 0.72rem;
   font-weight: 700;
   padding: 0.1rem 0.55rem;
-  min-width: 1.4rem;
+  min-width: 1.6rem;
   text-align: center;
 }
 
 .column-cards {
-  padding: 0.75rem;
+  padding: 0.85rem;
   display: flex;
   flex-direction: column;
-  gap: 0.6rem;
+  gap: 0.65rem;
   flex: 1;
-  min-height: 80px;
+  min-height: 100px;
 }
 
 .card-ghost {
@@ -483,26 +492,26 @@ watch(selectedSprintId, async (newId) => {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 0.4rem;
-  padding: 2rem 0 1.5rem;
+  gap: 0.5rem;
+  padding: 2.5rem 0 2rem;
   color: var(--su-text-muted);
   font-size: 0.8rem;
   pointer-events: none;
 }
 
 .empty-col-icon {
-  font-size: 1.6rem;
-  opacity: 0.35;
+  font-size: 1.75rem;
+  opacity: 0.4;
   color: var(--su-purple-400);
 }
 
 .empty-col-hint {
   font-size: 0.72rem;
   color: var(--su-border-glow);
-  opacity: 0.6;
+  opacity: 0.65;
   border: 1px dashed var(--su-border-glow);
   border-radius: 4px;
-  padding: 0.15rem 0.55rem;
+  padding: 0.2rem 0.6rem;
   margin-top: 0.1rem;
 }
 </style>

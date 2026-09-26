@@ -295,11 +295,15 @@ const chartOptions = {
 .profile-page {
   min-height: 100vh;
   background: var(--su-bg);
-  padding: 2rem;
-  max-width: 1000px;
+  padding: 2rem 2rem 3rem;
+  max-width: 1200px;
   margin: 0 auto;
   overflow-x: hidden;
   box-sizing: border-box;
+}
+
+@media (max-width: 600px) {
+  .profile-page { padding: 1rem 0.75rem 2rem; }
 }
 
 /* ── Loading / empty states ── */
@@ -322,35 +326,52 @@ const chartOptions = {
 .profile-header-card {
   background: var(--su-bg-surface);
   border: 1px solid var(--su-border);
-  border-radius: 14px;
-  padding: 2rem;
+  border-radius: 16px;
+  padding: 2rem 2.25rem;
   display: flex;
   align-items: flex-start;
-  gap: 1.5rem;
-  margin-bottom: 1.5rem;
-  box-shadow: 0 0 0 1px var(--su-border), 0 0 12px 2px rgba(124, 58, 237, 0.15);
+  gap: 1.75rem;
+  margin-bottom: 1.75rem;
+  box-shadow: 0 0 0 1px var(--su-border), 0 0 28px 4px rgba(124, 58, 237, 0.14);
+  position: relative;
+  overflow: hidden;
+  flex-wrap: wrap;
+}
+
+/* decorative orb */
+.profile-header-card::after {
+  content: '';
+  position: absolute;
+  right: -80px;
+  top: -80px;
+  width: 280px;
+  height: 280px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(124,58,237,0.14) 0%, transparent 70%);
+  pointer-events: none;
 }
 
 .profile-avatar {
-  width: 80px;
-  height: 80px;
+  width: 88px;
+  height: 88px;
   border-radius: 50%;
   border: 2px solid var(--su-border-glow);
-  box-shadow: 0 0 12px 3px rgba(124, 58, 237, 0.4);
+  box-shadow: 0 0 16px 4px rgba(124, 58, 237, 0.45);
   flex-shrink: 0;
   object-fit: cover;
 }
 
 .profile-avatar-placeholder {
-  width: 80px;
-  height: 80px;
+  width: 88px;
+  height: 88px;
   border-radius: 50%;
   background: var(--su-bg-elevated);
   border: 2px solid var(--su-border-glow);
+  box-shadow: 0 0 14px 3px rgba(124,58,237,0.35);
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 2rem;
+  font-size: 2.2rem;
   color: var(--su-purple-400);
   flex-shrink: 0;
 }
@@ -360,15 +381,15 @@ const chartOptions = {
   min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: 0.35rem;
+  gap: 0.4rem;
 }
 
 .profile-name {
   margin: 0;
-  font-size: 1.6rem;
+  font-size: 1.75rem;
   font-weight: 800;
   color: var(--su-purple-300);
-  text-shadow: 0 0 10px rgba(168, 85, 247, 0.7);
+  text-shadow: 0 0 12px rgba(168, 85, 247, 0.7);
   letter-spacing: -0.02em;
 }
 
@@ -401,7 +422,7 @@ const chartOptions = {
 .profile-grid {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-  gap: 1.25rem;
+  gap: 1.4rem;
 }
 
 @media (max-width: 700px) {
@@ -414,9 +435,9 @@ const chartOptions = {
 .profile-card {
   background: var(--su-bg-surface);
   border: 1px solid var(--su-border);
-  border-radius: 12px;
-  padding: 1.5rem;
-  box-shadow: 0 0 0 1px var(--su-border), 0 0 12px 2px rgba(124, 58, 237, 0.12);
+  border-radius: 14px;
+  padding: 1.6rem;
+  box-shadow: 0 0 0 1px var(--su-border), 0 0 14px 2px rgba(124, 58, 237, 0.1);
   min-width: 0;
   box-sizing: border-box;
 }
@@ -454,11 +475,23 @@ const chartOptions = {
 
 .card-title {
   margin: 0 0 1.25rem;
-  font-size: 0.8rem;
+  font-size: 0.78rem;
   font-weight: 700;
   color: var(--su-purple-300);
   text-transform: uppercase;
   letter-spacing: 0.08em;
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+.card-title::before {
+  content: '';
+  display: inline-block;
+  width: 3px;
+  height: 12px;
+  border-radius: 2px;
+  background: var(--su-purple-500);
+  box-shadow: 0 0 5px rgba(124,58,237,0.7);
 }
 
 /* ── Chart ── */
