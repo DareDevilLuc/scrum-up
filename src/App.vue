@@ -45,12 +45,28 @@ watch(() => auth.user, (user) => {
 <template>
   <div>
     <header v-if="showNav" class="app-nav">
+      <div class="app-nav__brand">
+        <RouterLink to="/dashboard" class="brand-link" aria-label="Scrum-Up home">
+          <span class="brand-icon"><i class="pi pi-bolt" /></span>
+          <span class="brand-name">Scrum<span class="brand-accent">Up</span></span>
+        </RouterLink>
+      </div>
+
       <nav class="app-nav__links">
-        <RouterLink to="/dashboard" class="nav-link">Dashboard</RouterLink>
-        <RouterLink to="/projects" class="nav-link">Projects</RouterLink>
-        <RouterLink to="/teams" class="nav-link">Teams</RouterLink>
+        <RouterLink to="/dashboard" class="nav-link">
+          <i class="pi pi-home" style="font-size: 0.8rem" />
+          Dashboard
+        </RouterLink>
+        <RouterLink to="/projects" class="nav-link">
+          <i class="pi pi-folder" style="font-size: 0.8rem" />
+          Projects
+        </RouterLink>
+        <RouterLink to="/teams" class="nav-link">
+          <i class="pi pi-users" style="font-size: 0.8rem" />
+          Teams
+        </RouterLink>
         <RouterLink to="/inbox" class="nav-link nav-link--inbox">
-          <i class="pi pi-inbox" style="font-size: 0.85rem" />
+          <i class="pi pi-inbox" style="font-size: 0.8rem" />
           Inbox
           <span v-if="invitations.pending.length + notifications.unreadCount > 0" class="inbox-badge">
             {{ invitations.pending.length + notifications.unreadCount }}
@@ -61,6 +77,7 @@ watch(() => auth.user, (user) => {
           Admin
         </RouterLink>
       </nav>
+
       <div class="app-nav__actions">
         <button class="nav-profile-btn" @click="router.push('/profile')">
           <img
@@ -86,42 +103,93 @@ watch(() => auth.user, (user) => {
 .app-nav {
   display: flex;
   align-items: center;
-  justify-content: space-between;
   padding: 0 1.5rem;
-  height: 3.25rem;
+  height: 3.5rem;
   background: var(--su-bg-surface);
   border-bottom: 1px solid var(--su-border);
-  box-shadow: 0 1px 0 var(--su-border), 0 2px 12px rgba(124, 58, 237, 0.12);
+  box-shadow: 0 1px 0 var(--su-border), 0 2px 16px rgba(124, 58, 237, 0.14);
   position: sticky;
   top: 0;
   z-index: 100;
+  gap: 1.5rem;
 }
+
+/* ── Brand ── */
+.app-nav__brand {
+  flex-shrink: 0;
+}
+.brand-link {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  text-decoration: none;
+  padding: 0.25rem 0.6rem 0.25rem 0.3rem;
+  border-radius: 8px;
+  border: 1px solid transparent;
+  transition: border-color 0.15s, background 0.15s;
+}
+.brand-link:hover {
+  border-color: rgba(124,58,237,0.35);
+  background: rgba(124,58,237,0.08);
+}
+.brand-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.6rem;
+  height: 1.6rem;
+  border-radius: 6px;
+  background: linear-gradient(135deg, var(--su-purple-700), var(--su-purple-500));
+  box-shadow: 0 0 8px 1px rgba(124,58,237,0.5);
+  color: var(--su-purple-200);
+  font-size: 0.75rem;
+}
+.brand-name {
+  font-size: 0.95rem;
+  font-weight: 800;
+  color: var(--su-text);
+  letter-spacing: -0.01em;
+}
+.brand-accent {
+  color: var(--su-purple-400);
+  text-shadow: 0 0 6px rgba(168,85,247,0.6);
+}
+
+/* ── Nav links ── */
 .app-nav__links {
   display: flex;
-  gap: 1.5rem;
+  gap: 0.25rem;
   align-items: center;
+  flex: 1;
 }
 .app-nav__actions {
   display: flex;
   align-items: center;
   gap: 0.75rem;
+  flex-shrink: 0;
 }
 .nav-link {
   text-decoration: none;
-  font-size: 0.875rem;
+  font-size: 0.85rem;
   color: var(--su-text-muted);
   font-weight: 500;
   display: flex;
   align-items: center;
   gap: 0.35rem;
-  padding: 0.2rem 0;
-  border-bottom: 2px solid transparent;
-  transition: border-color 0.15s, color 0.15s, text-shadow 0.15s;
+  padding: 0.35rem 0.7rem;
+  border-radius: 6px;
+  border: 1px solid transparent;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
 }
-.nav-link:hover,
+.nav-link:hover {
+  color: var(--su-purple-300);
+  background: rgba(124, 58, 237, 0.1);
+  border-color: rgba(124,58,237,0.2);
+}
 .nav-link.router-link-active {
   color: var(--su-purple-300);
-  border-bottom-color: var(--su-purple-400);
+  background: rgba(124, 58, 237, 0.12);
+  border-color: rgba(124,58,237,0.3);
 }
 .nav-link--admin {
   color: var(--su-purple-400);
@@ -129,7 +197,6 @@ watch(() => auth.user, (user) => {
 .nav-link--admin:hover,
 .nav-link--admin.router-link-active {
   color: var(--su-purple-300);
-  border-bottom-color: var(--su-border-glow);
   text-shadow: 0 0 8px rgba(168, 85, 247, 0.7);
 }
 .nav-link--inbox {
@@ -137,11 +204,11 @@ watch(() => auth.user, (user) => {
 }
 .inbox-badge {
   position: absolute;
-  top: -6px;
-  right: -10px;
+  top: -4px;
+  right: -4px;
   background: var(--su-danger);
   color: #fff;
-  font-size: 0.6rem;
+  font-size: 0.58rem;
   font-weight: 800;
   border-radius: 999px;
   padding: 0.05rem 0.35rem;
@@ -153,14 +220,15 @@ watch(() => auth.user, (user) => {
   align-items: center;
   gap: 0.5rem;
   background: none;
-  border: none;
+  border: 1px solid transparent;
   cursor: pointer;
-  padding: 0.2rem 0.5rem;
-  border-radius: 6px;
-  transition: background 0.15s;
+  padding: 0.25rem 0.6rem 0.25rem 0.25rem;
+  border-radius: 8px;
+  transition: background 0.15s, border-color 0.15s;
 }
 .nav-profile-btn:hover {
-  background: rgba(124, 58, 237, 0.12);
+  background: rgba(124, 58, 237, 0.1);
+  border-color: rgba(124,58,237,0.25);
 }
 .nav-avatar {
   width: 1.75rem;
@@ -185,6 +253,10 @@ watch(() => auth.user, (user) => {
   font-size: 0.8rem;
   color: var(--su-text-muted);
   transition: color 0.15s;
+  max-width: 130px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .nav-profile-btn:hover .nav-user {
   color: var(--su-purple-300);

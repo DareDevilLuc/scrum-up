@@ -121,9 +121,15 @@ function formatDate(date: string | null): string {
 
 <style scoped>
 .projects-list-view {
-  padding: 2rem;
+  padding: 2rem 2rem 3rem;
   background: var(--su-bg);
   min-height: 100vh;
+  max-width: 1280px;
+  margin: 0 auto;
+}
+
+@media (max-width: 600px) {
+  .projects-list-view { padding: 1rem 0.75rem 2rem; }
 }
 
 .page-header {
@@ -132,6 +138,8 @@ function formatDate(date: string | null): string {
   justify-content: space-between;
   margin-bottom: 2rem;
   gap: 1rem;
+  padding-bottom: 1.5rem;
+  border-bottom: 1px solid var(--su-border);
 }
 
 .page-title {
@@ -140,6 +148,19 @@ function formatDate(date: string | null): string {
   margin: 0 0 0.25rem;
   color: var(--su-purple-300);
   text-shadow: 0 0 10px rgba(168, 85, 247, 0.6);
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.page-title::before {
+  content: '';
+  display: inline-block;
+  width: 4px;
+  height: 1.5rem;
+  border-radius: 2px;
+  background: linear-gradient(180deg, var(--su-purple-400), var(--su-purple-700));
+  box-shadow: 0 0 8px rgba(124,58,237,0.8);
 }
 
 .page-subtitle {
@@ -158,6 +179,9 @@ function formatDate(date: string | null): string {
   text-align: center;
   padding: 4rem 2rem;
   color: var(--su-text-muted);
+  background: var(--su-bg-surface);
+  border: 1px dashed rgba(124, 58, 237, 0.3);
+  border-radius: 14px;
 }
 
 .empty-icon {
@@ -165,6 +189,7 @@ function formatDate(date: string | null): string {
   color: var(--su-border-glow);
   display: block;
   margin-bottom: 1rem;
+  opacity: 0.6;
 }
 
 .empty-hint {
@@ -181,20 +206,37 @@ function formatDate(date: string | null): string {
 .project-card {
   background: var(--su-bg-surface);
   border: 1px solid var(--su-border);
-  border-radius: 12px;
-  padding: 1.25rem;
+  border-radius: 14px;
+  padding: 1.5rem;
   cursor: pointer;
-  box-shadow: 0 0 0 1px var(--su-border), 0 0 12px 2px rgba(124, 58, 237, 0.15);
-  transition: box-shadow 0.2s, border-color 0.2s;
+  box-shadow: 0 0 0 1px var(--su-border), 0 0 14px 2px rgba(124, 58, 237, 0.12);
+  transition: box-shadow 0.2s, border-color 0.2s, transform 0.2s;
   display: flex;
   flex-direction: column;
   gap: 1rem;
+  position: relative;
+  overflow: hidden;
+}
+
+/* top accent bar */
+.project-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, var(--su-purple-700), var(--su-purple-400), transparent);
+  opacity: 0.6;
+  transition: opacity 0.2s;
 }
 
 .project-card:hover {
   border-color: var(--su-border-glow);
-  box-shadow: 0 0 0 1px var(--su-border-glow), 0 0 16px 4px rgba(124, 58, 237, 0.35);
+  box-shadow: 0 0 0 1px var(--su-border-glow), 0 0 22px 4px rgba(124, 58, 237, 0.35);
+  transform: translateY(-2px);
 }
+.project-card:hover::before { opacity: 1; }
 
 .project-card__header {
   display: flex;
@@ -204,10 +246,11 @@ function formatDate(date: string | null): string {
 }
 
 .project-card__name {
-  font-size: 1rem;
+  font-size: 1.05rem;
   font-weight: 700;
   color: var(--su-text);
   flex: 1;
+  line-height: 1.35;
 }
 
 .status-tag {
@@ -219,14 +262,18 @@ function formatDate(date: string | null): string {
 .project-card__meta {
   display: flex;
   flex-direction: column;
-  gap: 0.4rem;
+  gap: 0.45rem;
+  padding: 0.75rem;
+  background: rgba(124, 58, 237, 0.05);
+  border: 1px solid rgba(42, 26, 78, 0.6);
+  border-radius: 8px;
 }
 
 .meta-item {
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  font-size: 0.85rem;
+  font-size: 0.83rem;
   color: var(--su-text-muted);
 }
 
@@ -241,16 +288,23 @@ function formatDate(date: string | null): string {
   justify-content: space-between;
   align-items: center;
   margin-top: auto;
+  padding-top: 0.5rem;
+  border-top: 1px solid rgba(42, 26, 78, 0.5);
 }
 
 .project-card__date {
-  font-size: 0.8rem;
+  font-size: 0.78rem;
   color: var(--su-text-muted);
 }
 
 .project-card__arrow {
-  color: var(--su-text-muted);
-  font-size: 0.8rem;
+  color: var(--su-purple-400);
+  font-size: 0.85rem;
+  transition: transform 0.15s;
+}
+
+.project-card:hover .project-card__arrow {
+  transform: translateX(3px);
 }
 
 .mb-4 {

@@ -124,8 +124,17 @@ const loading = computed(() => projectsStore.loading || homeStore.loading)
             :value="roleLabel(auth.role)"
             :severity="roleSeverity(auth.role)"
           />
+          <span v-if="!loading" class="welcome-stat-chip">
+            <i class="pi pi-folder" />
+            {{ projectsStore.myProjects.length }} project{{ projectsStore.myProjects.length !== 1 ? 's' : '' }}
+          </span>
+          <span v-if="!loading" class="welcome-stat-chip">
+            <i class="pi pi-check-square" />
+            {{ homeStore.myTasks.length }} task{{ homeStore.myTasks.length !== 1 ? 's' : '' }}
+          </span>
         </div>
       </div>
+      <div class="welcome-glow-orb" aria-hidden="true" />
     </div>
 
     <!-- ── Loading ──────────────────────────────────────────────────────── -->
@@ -265,36 +274,51 @@ const loading = computed(() => projectsStore.loading || homeStore.loading)
 
 <style scoped>
 .home-dashboard {
-  padding: 2rem;
+  padding: 2rem 2rem 3rem;
   background: var(--su-bg);
   min-height: 100vh;
-  max-width: 1000px;
+  max-width: 1280px;
   margin: 0 auto;
 }
 
 @media (max-width: 600px) {
-  .home-dashboard { padding: 1rem 0.75rem; }
+  .home-dashboard { padding: 1rem 0.75rem 2rem; }
   .welcome-title { font-size: 1.1rem; }
 }
 
 /* ── Welcome header ── */
 .welcome-header {
+  position: relative;
   display: flex;
   align-items: center;
   gap: 1.25rem;
   margin-bottom: 2.5rem;
-  padding: 1.5rem;
+  padding: 1.75rem 2rem;
   background: var(--su-bg-surface);
   border: 1px solid var(--su-border);
   border-radius: 16px;
-  box-shadow: 0 0 20px 4px rgba(124, 58, 237, 0.1);
+  box-shadow: 0 0 0 1px var(--su-border), 0 0 32px 6px rgba(124, 58, 237, 0.12);
+  overflow: hidden;
   flex-wrap: wrap;
 }
 
+/* decorative glow orb */
+.welcome-glow-orb {
+  position: absolute;
+  right: -60px;
+  top: -60px;
+  width: 220px;
+  height: 220px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(124,58,237,0.18) 0%, transparent 70%);
+  pointer-events: none;
+}
+
 :deep(.user-avatar.p-avatar) {
-  width: 64px;
-  height: 64px;
-  font-size: 1.4rem;
+  width: 72px;
+  height: 72px;
+  font-size: 1.5rem;
+  flex-shrink: 0;
 }
 :deep(.avatar-fallback.p-avatar) {
   background: rgba(124, 58, 237, 0.2);
@@ -305,13 +329,30 @@ const loading = computed(() => projectsStore.loading || homeStore.loading)
 
 .welcome-text { flex: 1; min-width: 0; }
 .welcome-title {
-  font-size: 1.4rem;
+  font-size: 1.5rem;
   font-weight: 800;
   color: var(--su-purple-300);
-  text-shadow: 0 0 10px rgba(168, 85, 247, 0.5);
-  margin: 0 0 0.5rem;
+  text-shadow: 0 0 12px rgba(168, 85, 247, 0.55);
+  margin: 0 0 0.6rem;
 }
-.welcome-meta { display: flex; align-items: center; gap: 0.5rem; }
+.welcome-meta {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+.welcome-stat-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-size: 0.75rem;
+  color: var(--su-text-muted);
+  background: rgba(124, 58, 237, 0.1);
+  border: 1px solid rgba(124, 58, 237, 0.22);
+  border-radius: 999px;
+  padding: 0.15rem 0.55rem;
+}
+.welcome-stat-chip .pi { font-size: 0.7rem; color: var(--su-purple-400); }
 
 /* ── Utilities ── */
 .centered { display: flex; justify-content: center; padding: 4rem 0; }
@@ -326,6 +367,18 @@ const loading = computed(() => projectsStore.loading || homeStore.loading)
   letter-spacing: 0.07em;
   color: var(--su-purple-300);
   margin: 0 0 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.section-heading::before {
+  content: '';
+  display: inline-block;
+  width: 3px;
+  height: 14px;
+  border-radius: 2px;
+  background: var(--su-purple-500);
+  box-shadow: 0 0 6px rgba(124,58,237,0.7);
 }
 .section-heading-row {
   display: flex;
@@ -341,36 +394,42 @@ const loading = computed(() => projectsStore.loading || homeStore.loading)
   flex-direction: column;
   align-items: center;
   gap: 0.75rem;
-  padding: 2.5rem 0;
+  padding: 3rem 0;
   background: var(--su-bg-surface);
-  border: 1px dashed var(--su-border);
+  border: 1px dashed rgba(124, 58, 237, 0.3);
   border-radius: 12px;
 }
-.empty-icon { font-size: 2rem; color: var(--su-text-muted); }
+.empty-icon {
+  font-size: 2.25rem;
+  color: var(--su-border-glow);
+  opacity: 0.6;
+}
 .empty-text { margin: 0; color: var(--su-text-muted); font-size: 0.9rem; }
 
 /* ── Projects grid ── */
 .projects-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-  gap: 1rem;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 1.1rem;
 }
 
 .project-card {
   background: var(--su-bg-surface);
   border: 1px solid var(--su-border);
   border-radius: 12px;
-  padding: 1.25rem;
+  padding: 1.35rem 1.5rem;
   cursor: pointer;
-  transition: border-color 0.2s, box-shadow 0.2s;
+  box-shadow: 0 0 0 1px var(--su-border), 0 0 12px 2px rgba(124, 58, 237, 0.1);
+  transition: border-color 0.2s, box-shadow 0.2s, transform 0.2s;
   display: flex;
   flex-direction: column;
-  gap: 0.6rem;
+  gap: 0.75rem;
 }
 .project-card:hover,
 .project-card:focus-visible {
   border-color: var(--su-border-glow);
-  box-shadow: 0 0 16px 4px rgba(124, 58, 237, 0.25);
+  box-shadow: 0 0 0 1px var(--su-border-glow), 0 0 20px 4px rgba(124, 58, 237, 0.3);
+  transform: translateY(-1px);
   outline: none;
 }
 .project-card-top {
@@ -380,7 +439,7 @@ const loading = computed(() => projectsStore.loading || homeStore.loading)
   gap: 0.5rem;
 }
 .project-name {
-  font-size: 0.95rem;
+  font-size: 1rem;
   font-weight: 700;
   color: var(--su-text);
   flex: 1;
@@ -393,11 +452,13 @@ const loading = computed(() => projectsStore.loading || homeStore.loading)
 .project-meta {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.75rem;
+  gap: 0.6rem;
   font-size: 0.78rem;
   color: var(--su-text-muted);
+  padding-top: 0.25rem;
+  border-top: 1px solid rgba(42, 26, 78, 0.5);
 }
-.project-meta i { font-size: 0.72rem; margin-right: 0.2rem; }
+.project-meta i { font-size: 0.72rem; margin-right: 0.2rem; color: var(--su-purple-400); }
 
 /* ── Tasks ── */
 .tasks-container { display: flex; flex-direction: column; gap: 1rem; }
@@ -407,14 +468,15 @@ const loading = computed(() => projectsStore.loading || homeStore.loading)
   border: 1px solid var(--su-border);
   border-radius: 12px;
   overflow: hidden;
+  box-shadow: 0 0 0 1px var(--su-border), 0 0 10px 2px rgba(124, 58, 237, 0.08);
 }
 
 .sprint-group-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0.75rem 1rem;
-  background: rgba(124, 58, 237, 0.07);
+  padding: 0.75rem 1.1rem;
+  background: linear-gradient(90deg, rgba(124,58,237,0.1) 0%, rgba(124,58,237,0.04) 100%);
   border-bottom: 1px solid var(--su-border);
   gap: 0.5rem;
 }
@@ -435,12 +497,12 @@ const loading = computed(() => projectsStore.loading || homeStore.loading)
   display: flex;
   align-items: center;
   gap: 0.75rem;
-  padding: 0.65rem 1rem;
+  padding: 0.7rem 1.1rem;
   border-bottom: 1px solid var(--su-border);
   transition: background 0.15s;
 }
 .task-row:last-child { border-bottom: none; }
-.task-row:hover { background: rgba(124, 58, 237, 0.05); }
+.task-row:hover { background: rgba(124, 58, 237, 0.06); }
 
 /* Status dot */
 .task-status-dot {
