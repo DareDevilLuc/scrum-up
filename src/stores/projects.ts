@@ -167,6 +167,17 @@ export const useProjectsStore = defineStore('projects', () => {
         .single()
 
       if (projectError) throw projectError
+
+      // Auto-assign project_head role to creator, scoped to the team
+      if (payload.team_id) {
+        await supabase.from('user_roles').insert({
+          user_id: auth.user!.id,
+          role: 'project_head',
+          scope_type: 'team',
+          scope_id: payload.team_id,
+        })
+      }
+
       return project.id
     } catch (e) {
       error.value = (e as Error).message

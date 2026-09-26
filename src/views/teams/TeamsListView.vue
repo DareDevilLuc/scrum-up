@@ -26,13 +26,20 @@ function formatDate(iso: string): string {
         <i class="pi pi-users title-icon" />
         My Teams
       </h1>
-      <Button
-        v-if="auth.role === 'super_admin'"
-        label="Manage in Admin"
-        icon="pi pi-cog"
-        text
-        @click="router.push({ name: 'admin-teams' })"
-      />
+      <div class="header-actions">
+        <Button
+          label="Create Team"
+          icon="pi pi-plus"
+          @click="router.push({ name: 'team-new' })"
+        />
+        <Button
+          v-if="auth.role === 'super_admin'"
+          label="Manage in Admin"
+          icon="pi pi-cog"
+          text
+          @click="router.push({ name: 'admin-teams' })"
+        />
+      </div>
     </div>
 
     <!-- Loading -->
@@ -49,9 +56,7 @@ function formatDate(iso: string): string {
     <div v-else-if="teams.myTeams.length === 0" class="empty-state">
       <i class="pi pi-users empty-icon" />
       <p class="empty-text">You are not a member of any team yet.</p>
-      <p v-if="auth.role === 'super_admin'" class="empty-sub">
-        Go to <a class="link" @click="router.push({ name: 'admin-teams' })">Admin → Teams</a> to create one.
-      </p>
+      <p class="empty-sub">Create a team to get started.</p>
     </div>
 
     <!-- Team cards -->
@@ -101,6 +106,13 @@ function formatDate(iso: string): string {
   justify-content: space-between;
   flex-wrap: wrap;
   gap: 0.75rem;
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
 }
 
 .page-title {
