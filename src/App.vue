@@ -27,6 +27,8 @@ onMounted(async () => {
     <header v-if="showNav" class="app-nav">
       <nav class="app-nav__links">
         <RouterLink to="/dashboard" class="nav-link">Dashboard</RouterLink>
+        <RouterLink to="/projects" class="nav-link">Projects</RouterLink>
+        <RouterLink to="/teams" class="nav-link">Teams</RouterLink>
         <RouterLink v-if="auth.role === 'super_admin'" to="/admin" class="nav-link nav-link--admin">
           <i class="pi pi-shield" style="font-size: 0.8rem" />
           Admin
