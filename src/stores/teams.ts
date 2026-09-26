@@ -294,12 +294,15 @@ export const useTeamsStore = defineStore('teams', () => {
     }
 
     // 2. Delete the team (CASCADE removes team_members, team_invitations, etc.)
-    const { error: deleteError } = await supabase
+    // Use count:'exact' so we can detect when RLS silently blocks the delete
+    // (Supabase returns error:null with 0 rows when a policy prevents deletion)
+    const { error: deleteError, count } = await supabase
       .from('teams')
-      .delete()
+      .delete({ count: 'exact' })
       .eq('id', teamId)
 
     if (deleteError) throw deleteError
+    if (count === 0) throw new Error('You do not have permission to delete this team, or it no longer exists.')
 
     // 3. Clear local state
     currentTeam.value = null

@@ -164,11 +164,12 @@ async function confirmDeleteTeam() {
   deleteError.value = null
   try {
     await teams.deleteTeam(teamId.value)
+    showDeleteConfirm.value = false
     router.push({ name: 'teams' })
   } catch (e) {
     deleteError.value = (e as Error).message
+  } finally {
     deleteLoading.value = false
-    showDeleteConfirm.value = false
   }
 }
 
