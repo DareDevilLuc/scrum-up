@@ -64,6 +64,20 @@ const routes: RouteRecordRaw[] = [
     component: () => import('../views/ProjectView.vue'),
     beforeEnter: requireAuth,
   },
+
+  // ── Profiles ──────────────────────────────────────────────────────────────
+  {
+    path: '/profile',
+    name: 'profile-own',
+    component: () => import('../views/ProfileView.vue'),
+    beforeEnter: requireAuth,
+  },
+  {
+    path: '/profile/:userId',
+    name: 'profile',
+    component: () => import('../views/ProfileView.vue'),
+    beforeEnter: requireAuth,
+  },
 ]
 
 const router = createRouter({

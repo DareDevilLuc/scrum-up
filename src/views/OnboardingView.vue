@@ -30,6 +30,13 @@ async function handleSubmit() {
     })
     if (updateError) throw updateError
 
+    // Kick off GitHub profile sync in the background — don't block navigation
+    if (auth.user?.id) {
+      supabase.functions
+        .invoke('sync-github-profile', { body: { user_id: auth.user.id } })
+        .catch((e) => console.warn('[onboarding] profile sync failed:', e))
+    }
+
     router.replace('/dashboard')
   } catch (e) {
     error.value = (e as Error).message

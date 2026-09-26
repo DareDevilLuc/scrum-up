@@ -272,7 +272,7 @@ Build the super-admin control panel where super-admins can view all registered u
 
 ## Sub-Task 5 — Developer Profiles
 
-**Status:** `[ ] pending`
+**Status:** `[x] complete`
 
 **Intent:**
 Allow each developer to have a profile that is auto-populated from their GitHub account (repos, languages, bio) and supplemented with manual fields. This profile data is later used by the AI to suggest task assignments.
