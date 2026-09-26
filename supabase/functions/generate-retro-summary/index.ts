@@ -125,7 +125,7 @@ Be constructive, specific, and encouraging. Use plain prose only — no bullet p
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'llama3-70b-8192',
+        model: 'openai/gpt-oss-20b',
         temperature: 0.55,
         messages: [
           { role: 'system', content: systemPrompt },
