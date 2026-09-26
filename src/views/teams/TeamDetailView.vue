@@ -232,13 +232,13 @@ function statusLabel(status: string): string {
         icon="pi pi-arrow-left"
         text
         class="back-btn"
-        aria-label="Back to teams"
+        aria-label="Back to teams list"
         @click="router.push({ name: 'teams' })"
       />
       <div class="header-content">
         <div>
           <h1 class="page-title">
-            <i class="pi pi-users title-icon" />
+            <i class="pi pi-users title-icon" aria-hidden="true" />
             {{ teams.currentTeam?.name ?? 'Team' }}
           </h1>
           <p class="page-subtitle">{{ teams.currentMembers.length }} member{{ teams.currentMembers.length !== 1 ? 's' : '' }}</p>
@@ -249,6 +249,7 @@ function statusLabel(status: string): string {
             label="Manage in Admin"
             icon="pi pi-cog"
             text
+            aria-label="Manage team in admin panel"
             @click="router.push({ name: 'admin-teams' })"
           />
           <Button
@@ -258,6 +259,7 @@ function statusLabel(status: string): string {
             severity="danger"
             text
             size="small"
+            aria-label="Delete this team"
             @click="showDeleteConfirm = true"
           />
         </div>
@@ -265,10 +267,17 @@ function statusLabel(status: string): string {
     </div>
 
     <!-- Delete confirmation -->
-    <div v-if="showDeleteConfirm" class="confirm-overlay" @click.self="showDeleteConfirm = false">
+    <div
+      v-if="showDeleteConfirm"
+      class="confirm-overlay"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="confirm-title"
+      @click.self="showDeleteConfirm = false"
+    >
       <div class="confirm-dialog">
-        <h3 class="confirm-title">
-          <i class="pi pi-exclamation-triangle" /> Delete Team?
+        <h3 id="confirm-title" class="confirm-title">
+          <i class="pi pi-exclamation-triangle" aria-hidden="true" /> Delete Team?
         </h3>
         <p class="confirm-body">
           This will permanently delete <strong>{{ teams.currentTeam?.name }}</strong> and notify all members.
@@ -283,6 +292,7 @@ function statusLabel(status: string): string {
             icon="pi pi-trash"
             severity="danger"
             :loading="deleteLoading"
+            aria-label="Confirm permanent team deletion"
             @click="confirmDeleteTeam"
           />
           <Button
@@ -290,6 +300,7 @@ function statusLabel(status: string): string {
             text
             severity="secondary"
             :disabled="deleteLoading"
+            aria-label="Cancel deletion"
             @click="showDeleteConfirm = false"
           />
         </div>
@@ -297,7 +308,7 @@ function statusLabel(status: string): string {
     </div>
 
     <!-- Loading -->
-    <div v-if="teams.loading" class="centered">
+    <div v-if="teams.loading" class="centered" role="status" aria-label="Loading team">
       <ProgressSpinner />
     </div>
 
@@ -308,7 +319,7 @@ function statusLabel(status: string): string {
 
     <!-- Empty -->
     <div v-else-if="teams.currentMembers.length === 0" class="empty-state">
-      <i class="pi pi-user empty-icon" />
+      <i class="pi pi-user empty-icon" aria-hidden="true" />
       <p class="empty-text">No members in this team yet.</p>
     </div>
 
@@ -317,18 +328,22 @@ function statusLabel(status: string): string {
       <div v-for="group in roleGroups" :key="group.label" class="role-section">
         <!-- Role group header -->
         <div class="role-header">
-          <i :class="group.icon" class="role-icon" />
+          <i :class="group.icon" class="role-icon" aria-hidden="true" />
           <span class="role-label">{{ group.label }}</span>
-          <span class="role-count">{{ group.members.length }}</span>
+          <span class="role-count" :aria-label="`${group.members.length} members`">{{ group.members.length }}</span>
         </div>
 
         <!-- Members grid -->
-        <div class="members-grid">
+        <div class="members-grid" role="list">
           <div
             v-for="member in group.members"
             :key="member.user_id"
             class="member-card"
+            role="listitem"
+            tabindex="0"
+            :aria-label="`View profile of ${member.display_name ?? 'Unknown'}`"
             @click="router.push({ name: 'profile', params: { userId: member.user_id } })"
+            @keydown.enter.space.prevent="router.push({ name: 'profile', params: { userId: member.user_id } })"
           >
             <!-- Avatar -->
             <div class="member-avatar-wrap">
@@ -356,11 +371,12 @@ function statusLabel(status: string): string {
                 v-if="member.github_username"
                 :href="`https://github.com/${member.github_username}`"
                 target="_blank"
-                rel="noopener"
+                rel="noopener noreferrer"
                 class="github-link"
+                :aria-label="`GitHub profile of ${member.github_username}`"
                 @click.stop
               >
-                <i class="pi pi-github" />
+                <i class="pi pi-github" aria-hidden="true" />
                 {{ member.github_username }}
               </a>
             </div>
@@ -379,8 +395,8 @@ function statusLabel(status: string): string {
             </div>
 
             <div class="member-card-footer">
-              <div class="view-profile-hint">
-                <i class="pi pi-external-link" /> View profile
+              <div class="view-profile-hint" aria-hidden="true">
+                <i class="pi pi-external-link" aria-hidden="true" /> View profile
               </div>
               <Button
                 v-if="canKick(member)"
@@ -402,16 +418,20 @@ function statusLabel(status: string): string {
     <!-- Projects panel -->
     <div v-if="teams.currentTeamProjects.length > 0" class="projects-section">
       <div class="role-header">
-        <i class="pi pi-folder role-icon" />
+        <i class="pi pi-folder role-icon" aria-hidden="true" />
         <span class="role-label">Projects</span>
-        <span class="role-count">{{ teams.currentTeamProjects.length }}</span>
+        <span class="role-count" :aria-label="`${teams.currentTeamProjects.length} projects`">{{ teams.currentTeamProjects.length }}</span>
       </div>
-      <div class="projects-grid">
+      <div class="projects-grid" role="list">
         <div
           v-for="proj in teams.currentTeamProjects"
           :key="proj.id"
           class="project-card"
+          role="listitem"
+          tabindex="0"
+          :aria-label="`Open project ${proj.name}`"
           @click="router.push({ name: 'project-detail', params: { id: proj.id } })"
+          @keydown.enter.space.prevent="router.push({ name: 'project-detail', params: { id: proj.id } })"
         >
           <div class="project-card-header">
             <span class="project-name">{{ proj.name }}</span>
@@ -421,11 +441,11 @@ function statusLabel(status: string): string {
           </div>
           <div class="project-meta">
             <span v-if="proj.created_by" class="project-head-chip">
-              <i class="pi pi-star" />
+              <i class="pi pi-star" aria-hidden="true" />
               {{ memberNameMap[proj.created_by] ?? 'Unknown' }}
             </span>
             <span v-if="proj.start_date" class="meta-chip">
-              <i class="pi pi-calendar" />
+              <i class="pi pi-calendar" aria-hidden="true" />
               {{ new Date(proj.start_date).toLocaleDateString(undefined, { month: 'short', year: 'numeric' }) }}
             </span>
           </div>
@@ -455,12 +475,16 @@ function statusLabel(status: string): string {
       </div>
 
       <!-- Results dropdown -->
-      <div v-if="inviteSearchResults.length > 0" class="invite-results">
+      <div v-if="inviteSearchResults.length > 0" class="invite-results" role="listbox" aria-label="Search results">
         <div
           v-for="u in inviteSearchResults"
           :key="u.id"
           class="invite-result-row"
+          role="option"
+          tabindex="0"
+          :aria-label="`Add ${u.display_name ?? u.github_username ?? 'Unknown'} to invite list`"
           @click="addPendingInvite(u)"
+          @keydown.enter.space.prevent="addPendingInvite(u)"
         >
           <Avatar
             v-if="u.avatar_url"
@@ -477,7 +501,7 @@ function statusLabel(status: string): string {
           />
           <span class="ir-name">{{ u.display_name ?? u.github_username ?? 'Unknown' }}</span>
           <span v-if="u.github_username" class="ir-github">@{{ u.github_username }}</span>
-          <i class="pi pi-plus ir-add" />
+          <i class="pi pi-plus ir-add" aria-hidden="true" />
         </div>
       </div>
 
@@ -501,16 +525,18 @@ function statusLabel(status: string): string {
           <button
             class="role-toggle"
             :class="`role-toggle--${inv.role}`"
+            :aria-label="`Toggle role for ${inv.user.display_name ?? 'user'}: currently ${inv.role}`"
             @click="toggleInviteRole(inv)"
           >
             {{ inv.role === 'project_head' ? 'Project Head' : 'Developer' }}
-            <i class="pi pi-refresh" />
+            <i class="pi pi-refresh" aria-hidden="true" />
           </button>
           <Button
             icon="pi pi-times"
             text
             severity="danger"
             size="small"
+            :aria-label="`Remove ${inv.user.display_name ?? 'user'} from invite list`"
             @click="removePendingInvite(inv.user.id)"
           />
         </div>
@@ -559,6 +585,13 @@ function statusLabel(status: string): string {
   display: flex;
   flex-direction: column;
   gap: 1.25rem;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+@media (max-width: 600px) {
+  .detail-page { padding: 1rem 0.75rem; }
+  .page-title { font-size: 1.1rem; }
 }
 
 /* ── Header ────────────────────────────────────────────────────────────────── */
@@ -700,8 +733,12 @@ function statusLabel(status: string): string {
 
 .members-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
   gap: 1rem;
+}
+
+@media (max-width: 480px) {
+  .members-grid { grid-template-columns: 1fr 1fr; }
 }
 
 .member-card {
@@ -719,9 +756,11 @@ function statusLabel(status: string): string {
   transition: border-color 0.15s, box-shadow 0.15s;
 }
 
-.member-card:hover {
+.member-card:hover,
+.member-card:focus-visible {
   border-color: var(--su-border-glow);
   box-shadow: 0 0 0 1px var(--su-border-glow), 0 0 16px 4px rgba(124, 58, 237, 0.35);
+  outline: none;
 }
 
 .member-avatar-wrap {
@@ -815,9 +854,11 @@ function statusLabel(status: string): string {
   transition: border-color 0.15s, box-shadow 0.15s;
 }
 
-.project-card:hover {
+.project-card:hover,
+.project-card:focus-visible {
   border-color: var(--su-border-glow);
   box-shadow: 0 0 0 1px var(--su-border-glow), 0 0 14px 4px rgba(124, 58, 237, 0.3);
+  outline: none;
 }
 
 .project-card-header {
@@ -930,8 +971,10 @@ function statusLabel(status: string): string {
   transition: background 0.1s;
 }
 
-.invite-result-row:hover {
+.invite-result-row:hover,
+.invite-result-row:focus-visible {
   background: rgba(124, 58, 237, 0.12);
+  outline: none;
 }
 
 .ir-name {
@@ -1002,8 +1045,11 @@ function statusLabel(status: string): string {
   background: rgba(124, 58, 237, 0.1);
 }
 
-.role-toggle--developer:hover {
+.role-toggle--developer:hover,
+.role-toggle--developer:focus-visible {
   background: rgba(124, 58, 237, 0.22);
+  outline: 2px solid rgba(124, 58, 237, 0.5);
+  outline-offset: 2px;
 }
 
 .role-toggle--project_head {
@@ -1012,8 +1058,11 @@ function statusLabel(status: string): string {
   background: rgba(251, 191, 36, 0.1);
 }
 
-.role-toggle--project_head:hover {
+.role-toggle--project_head:hover,
+.role-toggle--project_head:focus-visible {
   background: rgba(251, 191, 36, 0.22);
+  outline: 2px solid rgba(251, 191, 36, 0.5);
+  outline-offset: 2px;
 }
 
 .invite-msg { margin: 0; }

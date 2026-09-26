@@ -337,3 +337,135 @@ body {
 ::-webkit-scrollbar-thumb:hover {
   background: var(--su-purple-400);
 }
+
+/* ── Derived Visual Tokens ──────────────────────────────────────────────────── */
+/* Built from existing --su-* hue values — no new raw hex colors */
+:root {
+  --su-glow-base:   rgba(124, 58, 237, 0.35);
+  --su-glow-strong: rgba(168, 85, 247, 0.65);
+  --su-glow-subtle: rgba(124, 58, 237, 0.18);
+
+  --su-card-border-glow:   0 0 0 1px var(--su-border-glow), 0 0 14px 2px var(--su-glow-base);
+  --su-card-hover-lift:    0 0 0 1px var(--su-border-glow), 0 0 28px 6px var(--su-glow-strong), 0 4px 20px 0 rgba(0,0,0,0.55);
+
+  --su-text-glow:   0 0 8px rgba(168, 85, 247, 0.7);
+  --su-icon-glow:   drop-shadow(0 0 4px rgba(168, 85, 247, 0.75));
+}
+
+/* ── Keyframes ──────────────────────────────────────────────────────────────── */
+@media (prefers-reduced-motion: no-preference) {
+  @keyframes su-fade-in {
+    from { opacity: 0; transform: translateY(10px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  @keyframes su-stagger-in {
+    from { opacity: 0; transform: translateX(-8px); }
+    to   { opacity: 1; transform: translateX(0); }
+  }
+
+  @keyframes su-pulse-glow {
+    0%, 100% { box-shadow: 0 0 8px 1px var(--su-glow-base); }
+    50%       { box-shadow: 0 0 18px 4px var(--su-glow-strong); }
+  }
+
+  @keyframes su-shimmer {
+    0%   { background-position: -200% center; }
+    100% { background-position:  200% center; }
+  }
+}
+
+/* ── Utility Classes ────────────────────────────────────────────────────────── */
+
+/* Entrance animations — opt-in per element */
+@media (prefers-reduced-motion: no-preference) {
+  .su-fade-in {
+    animation: su-fade-in 0.35s ease both;
+  }
+  .su-stagger-in {
+    animation: su-stagger-in 0.3s ease both;
+  }
+  /* Stagger siblings with CSS custom-property delay */
+  .su-stagger-in:nth-child(1)  { animation-delay: calc(1  * 55ms); }
+  .su-stagger-in:nth-child(2)  { animation-delay: calc(2  * 55ms); }
+  .su-stagger-in:nth-child(3)  { animation-delay: calc(3  * 55ms); }
+  .su-stagger-in:nth-child(4)  { animation-delay: calc(4  * 55ms); }
+  .su-stagger-in:nth-child(5)  { animation-delay: calc(5  * 55ms); }
+  .su-stagger-in:nth-child(6)  { animation-delay: calc(6  * 55ms); }
+  .su-stagger-in:nth-child(7)  { animation-delay: calc(7  * 55ms); }
+  .su-stagger-in:nth-child(8)  { animation-delay: calc(8  * 55ms); }
+}
+
+/* Glow variants */
+.su-glow {
+  box-shadow: var(--su-card-border-glow) !important;
+}
+.su-glow-strong {
+  box-shadow: var(--su-card-hover-lift) !important;
+}
+.su-glow-pulse {
+  animation: su-pulse-glow 2.4s ease-in-out infinite;
+}
+.su-text-glow {
+  text-shadow: var(--su-text-glow);
+}
+.su-icon-glow {
+  filter: var(--su-icon-glow);
+}
+
+/* Hover-lift card — add to any card wrapper */
+.su-card-lift {
+  transition: box-shadow 0.25s ease, transform 0.25s ease;
+}
+.su-card-lift:hover {
+  box-shadow: var(--su-card-hover-lift) !important;
+  transform: translateY(-2px);
+}
+
+/* Skeleton / shimmer loader */
+.su-skeleton {
+  position: relative;
+  overflow: hidden;
+  background: var(--su-bg-elevated);
+  border-radius: 6px;
+}
+.su-skeleton::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(168, 85, 247, 0.12) 40%,
+    rgba(192, 132, 252, 0.18) 50%,
+    rgba(168, 85, 247, 0.12) 60%,
+    transparent 100%
+  );
+  background-size: 200% 100%;
+  animation: su-shimmer 1.6s linear infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .su-skeleton::after { animation: none; }
+}
+
+/* Neon divider */
+.su-divider-glow {
+  border: none;
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    var(--su-border-glow) 30%,
+    var(--su-purple-400) 50%,
+    var(--su-border-glow) 70%,
+    transparent
+  );
+  box-shadow: 0 0 6px 1px var(--su-glow-base);
+  margin: 1rem 0;
+}
+
+/* Accent badge glow — strengthen existing .p-tag in hero contexts */
+.su-badge-glow.p-tag {
+  box-shadow: 0 0 8px 2px var(--su-glow-base) !important;
+}
+

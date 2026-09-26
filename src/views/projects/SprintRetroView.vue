@@ -243,7 +243,7 @@ const columns: ColConfig[] = [
   <div class="retro-page">
 
     <!-- Loading -->
-    <div v-if="loading" class="centered">
+    <div v-if="loading" class="centered" role="status" aria-label="Loading retrospective">
       <ProgressSpinner />
     </div>
 
@@ -258,25 +258,26 @@ const columns: ColConfig[] = [
           icon="pi pi-arrow-left"
           text
           class="back-btn"
-          aria-label="Back to kanban"
+          aria-label="Back to kanban board"
           @click="router.push({ name: 'kanban', params: { id: projectId, sprintId } })"
         />
         <div class="header-content">
           <div>
             <h1 class="page-title">
-              <i class="pi pi-comments title-icon" />
+              <i class="pi pi-comments title-icon" aria-hidden="true" />
               Retrospective
             </h1>
             <p v-if="sprintName" class="page-subtitle">{{ sprintName }}</p>
           </div>
           <div class="header-actions">
-            <span v-if="saving" class="saving-badge">
-              <i class="pi pi-spin pi-spinner" /> Saving…
+            <span v-if="saving" class="saving-badge" role="status" aria-live="polite">
+              <i class="pi pi-spin pi-spinner" aria-hidden="true" /> Saving…
             </span>
             <Button
               label="Sprint Review"
               icon="pi pi-chart-bar"
               text
+              aria-label="Go to sprint review"
               @click="router.push({ name: 'sprint-review', params: { id: projectId, sprintId } })"
             />
           </div>
@@ -284,49 +285,52 @@ const columns: ColConfig[] = [
       </div>
 
       <!-- ── Retro board ──────────────────────────────────────────────────── -->
-      <div class="retro-board">
+      <div class="retro-board" role="region" aria-label="Retrospective board">
         <div
           v-for="col in columns"
           :key="col.key"
           class="retro-col"
           :class="col.accentClass"
+          role="group"
+          :aria-label="`${col.label} column`"
         >
           <!-- Column header -->
           <div class="col-header">
             <span class="col-title">
-              <i :class="col.icon" />
+              <i :class="col.icon" aria-hidden="true" />
               {{ col.label }}
             </span>
-            <span class="col-count">{{ notes[col.key].length }}</span>
+            <span class="col-count" :aria-label="`${notes[col.key].length} notes`">{{ notes[col.key].length }}</span>
           </div>
 
           <!-- Notes list -->
-          <div class="notes-list">
+          <div class="notes-list" role="list">
             <div
               v-for="(note, index) in notes[col.key]"
               :key="index"
               class="note-item"
+              role="listitem"
             >
               <div class="note-body">
                 <span class="note-text">{{ note.text }}</span>
                 <span class="note-author">
-                  <i class="pi pi-user author-icon" />
+                  <i class="pi pi-user author-icon" aria-hidden="true" />
                   {{ note.anonymous ? 'Anonymous' : note.author }}
                 </span>
               </div>
               <button
                 v-if="canRemove(note)"
                 class="note-remove"
-                title="Remove note"
+                :aria-label="`Remove note: ${note.text.slice(0, 40)}`"
                 @click="removeNote(col.key, index)"
               >
-                <i class="pi pi-times" />
+                <i class="pi pi-times" aria-hidden="true" />
               </button>
             </div>
 
-            <div v-if="notes[col.key].length === 0" class="notes-empty">
-              <i class="pi pi-inbox empty-icon" />
-              <span>No notes yet</span>
+            <div v-if="notes[col.key].length === 0" class="notes-empty" role="status">
+              <i class="pi pi-inbox empty-icon" aria-hidden="true" />
+              <span>No notes yet — add one below</span>
             </div>
           </div>
 
@@ -337,18 +341,19 @@ const columns: ColConfig[] = [
                 v-model="newNote[col.key]"
                 :placeholder="col.inputPlaceholder"
                 class="note-input"
+                :aria-label="`Add note to ${col.label}`"
                 @keydown.enter="handleEnter(col.key, $event)"
               />
               <Button
                 icon="pi pi-plus"
                 class="add-btn"
                 :disabled="!newNote[col.key].trim()"
-                aria-label="Add note"
+                :aria-label="`Add note to ${col.label}`"
                 @click="addNote(col.key)"
               />
             </div>
             <label class="anon-toggle">
-              <Checkbox v-model="postAnonymous[col.key]" :binary="true" class="anon-checkbox" />
+              <Checkbox v-model="postAnonymous[col.key]" :binary="true" class="anon-checkbox" :aria-label="`Post anonymously in ${col.label}`" />
               <span class="anon-label">Post anonymously</span>
             </label>
           </div>
@@ -359,7 +364,7 @@ const columns: ColConfig[] = [
       <div class="summary-card">
         <div class="summary-header">
           <span class="summary-title">
-            <i class="pi pi-sparkles" />
+            <i class="pi pi-sparkles" aria-hidden="true" />
             AI Retrospective Summary
           </span>
           <Button
@@ -368,11 +373,12 @@ const columns: ColConfig[] = [
             size="small"
             text
             :loading="generatingSummary"
+            aria-label="Generate AI retrospective summary"
             @click="generateRetroSummary"
           />
         </div>
 
-        <div v-if="generatingSummary" class="centered-sm">
+        <div v-if="generatingSummary" class="centered-sm" role="status" aria-label="Generating summary">
           <ProgressSpinner style="width:28px;height:28px" />
         </div>
 
@@ -383,7 +389,7 @@ const columns: ColConfig[] = [
         <div v-else-if="retroSummary" class="summary-text">{{ retroSummary }}</div>
 
         <div v-else class="summary-empty">
-          <i class="pi pi-file-edit summary-empty-icon" />
+          <i class="pi pi-file-edit summary-empty-icon" aria-hidden="true" />
           <p>Click <strong>Generate Summary</strong> to get an AI-written overview of the team's retrospective notes.</p>
         </div>
       </div>
@@ -400,6 +406,13 @@ const columns: ColConfig[] = [
   display: flex;
   flex-direction: column;
   gap: 1.25rem;
+  max-width: 1100px;
+  margin: 0 auto;
+}
+
+@media (max-width: 600px) {
+  .retro-page { padding: 1rem 0.75rem; }
+  .page-title { font-size: 1.1rem; }
 }
 
 /* ── Header ────────────────────────────────────────────────────────────────── */
@@ -465,7 +478,12 @@ const columns: ColConfig[] = [
   align-items: flex-start;
 }
 
-@media (max-width: 900px) {
+/* Tablet: stack to 1-column at ≤768px, 2-column at 769–1024px */
+@media (max-width: 1024px) and (min-width: 769px) {
+  .retro-board { grid-template-columns: repeat(2, 1fr); }
+}
+
+@media (max-width: 768px) {
   .retro-board { grid-template-columns: 1fr; }
 }
 
@@ -570,7 +588,7 @@ const columns: ColConfig[] = [
   border: none;
   cursor: pointer;
   color: var(--su-text-muted);
-  padding: 0.1rem 0.2rem;
+  padding: 0.1rem 0.25rem;
   border-radius: 4px;
   font-size: 0.7rem;
   transition: color 0.15s, background 0.15s;
@@ -581,6 +599,12 @@ const columns: ColConfig[] = [
 .note-remove:hover {
   color: var(--su-danger);
   background: rgba(239, 68, 68, 0.1);
+}
+
+.note-remove:focus-visible {
+  outline: 2px solid var(--su-danger);
+  outline-offset: 2px;
+  color: var(--su-danger);
 }
 
 .notes-empty {

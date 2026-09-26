@@ -160,6 +160,7 @@ function priorityClass(p: string) {
       <Button
         icon="pi pi-arrow-left"
         text
+        aria-label="Back to project dashboard"
         @click="router.push({ name: 'project-detail', params: { id: projectId } })"
         class="back-btn"
       />
@@ -172,7 +173,7 @@ function priorityClass(p: string) {
     </div>
 
     <!-- Loading project -->
-    <div v-if="projectsStore.loading || loadingTeam" class="centered">
+    <div v-if="projectsStore.loading || loadingTeam" class="centered" role="status" aria-label="Loading project">
       <ProgressSpinner />
     </div>
 
@@ -204,6 +205,7 @@ function priorityClass(p: string) {
           icon="pi pi-bolt"
           :loading="generating"
           :disabled="!projectsStore.currentProject || teamMembers.length === 0"
+          aria-label="Generate AI sprint plan"
           @click="handleGenerate"
           class="generate-btn"
         />
@@ -232,27 +234,29 @@ function priorityClass(p: string) {
           v-for="(sprint, si) in plan.sprints"
           :key="si"
           class="sprint-card"
+          :aria-label="`Sprint ${si + 1}: ${sprint.name}`"
         >
           <!-- Sprint header -->
           <div class="sprint-header">
             <div class="sprint-meta">
               <span class="sprint-number">Sprint {{ si + 1 }}</span>
               <div class="sprint-dates">
-                <InputText v-model="sprint.start_date" type="date" class="date-input" />
-                <span class="date-sep">→</span>
-                <InputText v-model="sprint.end_date" type="date" class="date-input" />
+                <InputText v-model="sprint.start_date" type="date" class="date-input" :aria-label="`Sprint ${si + 1} start date`" />
+                <span class="date-sep" aria-hidden="true">→</span>
+                <InputText v-model="sprint.end_date" type="date" class="date-input" :aria-label="`Sprint ${si + 1} end date`" />
               </div>
             </div>
             <InputText
               v-model="sprint.name"
               placeholder="Sprint name"
               class="sprint-name-input"
+              :aria-label="`Sprint ${si + 1} name`"
             />
           </div>
 
           <div class="sprint-goal-row">
-            <label class="field-label">Goal</label>
-            <InputText v-model="sprint.goal" placeholder="Sprint goal…" class="w-full" />
+            <label class="field-label" :for="`goal-${si}`">Goal</label>
+            <InputText :id="`goal-${si}`" v-model="sprint.goal" placeholder="Sprint goal…" class="w-full" />
           </div>
 
           <!-- Tasks table -->
@@ -261,7 +265,8 @@ function priorityClass(p: string) {
               <span class="tasks-label">Tasks ({{ sprint.tasks.length }})</span>
             </div>
 
-            <div class="task-row task-row-head">
+            <!-- Desktop header row (hidden on mobile) -->
+            <div class="task-row task-row-head" aria-hidden="true">
               <span class="col-title">Title</span>
               <span class="col-desc">Description</span>
               <span class="col-priority">Priority</span>
@@ -274,16 +279,19 @@ function priorityClass(p: string) {
               v-for="(task, ti) in sprint.tasks"
               :key="ti"
               class="task-row"
+              :aria-label="`Task ${ti + 1}`"
             >
               <InputText
                 v-model="task.title"
                 placeholder="Task title"
                 class="col-title"
+                :aria-label="`Task ${ti + 1} title`"
               />
               <InputText
                 v-model="task.description"
                 placeholder="Short description"
                 class="col-desc"
+                :aria-label="`Task ${ti + 1} description`"
               />
               <Dropdown
                 v-model="task.priority"
@@ -291,6 +299,7 @@ function priorityClass(p: string) {
                 optionLabel="label"
                 optionValue="value"
                 class="col-priority"
+                :aria-label="`Task ${ti + 1} priority`"
               >
                 <template #value="slotProps">
                   <span :class="['priority-badge', priorityClass(slotProps.value)]">
@@ -308,6 +317,7 @@ function priorityClass(p: string) {
                 buttonLayout="horizontal"
                 incrementButtonIcon="pi pi-plus"
                 decrementButtonIcon="pi pi-minus"
+                :aria-label="`Task ${ti + 1} story points`"
               />
               <Dropdown
                 v-model="task.suggested_assignee_user_id"
@@ -316,12 +326,14 @@ function priorityClass(p: string) {
                 optionValue="value"
                 placeholder="Unassigned"
                 class="col-assignee"
+                :aria-label="`Task ${ti + 1} assignee`"
               />
               <Button
                 icon="pi pi-trash"
                 text
                 severity="danger"
                 class="col-remove"
+                :aria-label="`Remove task ${ti + 1}`"
                 @click="removeTask(si, ti)"
               />
             </div>
@@ -332,6 +344,7 @@ function priorityClass(p: string) {
               icon="pi pi-plus"
               text
               class="add-task-btn"
+              :aria-label="`Add task to Sprint ${si + 1}`"
               @click="addTask(si)"
             />
           </div>
@@ -425,6 +438,12 @@ function priorityClass(p: string) {
   text-shadow: 0 0 10px rgba(168, 85, 247, 0.6);
 }
 .page-subtitle { margin: 0; color: var(--su-text-muted); font-size: 0.9rem; }
+
+/* ── Responsive ── */
+@media (max-width: 768px) {
+  .planner-view { padding: 1rem 0.75rem; }
+  .page-title { font-size: 1.35rem; }
+}
 
 /* ── Centred spinner ── */
 .centered { display: flex; justify-content: center; padding: 4rem 0; }
@@ -534,6 +553,38 @@ function priorityClass(p: string) {
 }
 .col-title, .col-desc, .col-priority, .col-pts, .col-assignee, .col-remove {
   min-width: 0;
+}
+
+/* Mobile task rows — collapse to card layout */
+@media (max-width: 768px) {
+  .task-row-head { display: none; }
+
+  .task-row {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    padding: 0.75rem;
+    background: var(--su-bg-elevated);
+    border: 1px solid var(--su-border);
+    border-radius: 8px;
+    margin-bottom: 0.4rem;
+  }
+
+  .task-row .col-title,
+  .task-row .col-desc,
+  .task-row .col-priority,
+  .task-row .col-pts,
+  .task-row .col-assignee {
+    width: 100%;
+  }
+
+  .task-row .col-remove {
+    align-self: flex-end;
+  }
+
+  .tasks-section { gap: 0; }
+  .sprint-dates { flex-wrap: wrap; }
+  .date-input { width: 130px; }
 }
 
 /* ── Priority badge ── */

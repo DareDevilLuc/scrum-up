@@ -144,7 +144,7 @@ watch(sprintId, fetchSprintDetail)
   <div class="review-page">
 
     <!-- Loading -->
-    <div v-if="loadingSprint" class="centered">
+    <div v-if="loadingSprint" class="centered" role="status" aria-label="Loading sprint">
       <ProgressSpinner />
     </div>
 
@@ -159,12 +159,12 @@ watch(sprintId, fetchSprintDetail)
           icon="pi pi-arrow-left"
           text
           class="back-btn"
-          aria-label="Back to kanban"
+          aria-label="Back to kanban board"
           @click="router.push({ name: 'kanban', params: { id: projectId, sprintId } })"
         />
         <div class="header-content">
           <h1 class="page-title">
-            <i class="pi pi-chart-bar title-icon" />
+            <i class="pi pi-chart-bar title-icon" aria-hidden="true" />
             Sprint Review
           </h1>
           <div class="header-actions">
@@ -172,12 +172,14 @@ watch(sprintId, fetchSprintDetail)
               label="Retrospective"
               icon="pi pi-comments"
               text
+              aria-label="Go to sprint retrospective"
               @click="router.push({ name: 'sprint-retro', params: { id: projectId, sprintId } })"
             />
             <Button
               label="Print / Export PDF"
               icon="pi pi-print"
               outlined
+              aria-label="Print or export as PDF"
               @click="printPage"
             />
           </div>
@@ -187,11 +189,13 @@ watch(sprintId, fetchSprintDetail)
       <!-- ── Hero section ────────────────────────────────────────────────── -->
       <div class="hero-card print-card">
         <div class="hero-top">
-          <div>
+          <div class="hero-info">
             <div class="sprint-name">{{ sprint.name }}</div>
             <div class="sprint-dates">
-              <i class="pi pi-calendar" />
-              {{ formatDate(sprint.start_date) }} → {{ formatDate(sprint.end_date) }}
+              <i class="pi pi-calendar" aria-hidden="true" />
+              <time v-if="sprint.start_date">{{ formatDate(sprint.start_date) }}</time>
+              <span aria-hidden="true">→</span>
+              <time v-if="sprint.end_date">{{ formatDate(sprint.end_date) }}</time>
             </div>
           </div>
           <Tag
@@ -253,39 +257,49 @@ watch(sprintId, fetchSprintDetail)
       <!-- ── GitHub highlights ────────────────────────────────────────────── -->
       <div class="section-card print-card">
         <div class="section-title">
-          <i class="pi pi-github" />
+          <i class="pi pi-github" aria-hidden="true" />
           GitHub Highlights
         </div>
 
         <template v-if="githubHighlights">
-          <div class="gh-stats">
-            <div class="gh-stat-chip">
-              <i class="pi pi-share-alt" />
-              <span class="gh-stat-num">{{ githubHighlights.pr_count }}</span>
+          <div class="gh-stats" role="list" aria-label="GitHub statistics">
+            <div class="gh-stat-chip" role="listitem">
+              <i class="pi pi-share-alt" aria-hidden="true" />
+              <span class="gh-stat-num" aria-label="{{ githubHighlights.pr_count }} pull requests merged">{{ githubHighlights.pr_count }}</span>
               <span class="gh-stat-lbl">PRs merged</span>
             </div>
-            <div class="gh-stat-chip">
-              <i class="pi pi-exclamation-circle" />
-              <span class="gh-stat-num">{{ githubHighlights.issues_count }}</span>
+            <div class="gh-stat-chip" role="listitem">
+              <i class="pi pi-exclamation-circle" aria-hidden="true" />
+              <span class="gh-stat-num" aria-label="{{ githubHighlights.issues_count }} issues closed">{{ githubHighlights.issues_count }}</span>
               <span class="gh-stat-lbl">Issues closed</span>
             </div>
           </div>
 
           <div v-if="githubHighlights.top_commits.length" class="commits-list">
             <div class="commits-label">Top Commits</div>
-            <div
+            <a
               v-for="commit in githubHighlights.top_commits"
               :key="commit.sha"
+              :href="commit.url"
+              target="_blank"
+              rel="noopener noreferrer"
               class="commit-row"
+              :aria-label="`Commit ${commit.sha.slice(0,7)} by ${commit.author}: ${commit.message}`"
             >
               <span class="commit-sha">{{ commit.sha.slice(0, 7) }}</span>
               <span class="commit-msg">{{ commit.message }}</span>
               <span class="commit-author">{{ commit.author }}</span>
-            </div>
+            </a>
           </div>
-          <div v-else class="empty-text">No GitHub data cached for this sprint.</div>
+          <div v-else class="empty-text">
+            <i class="pi pi-code" aria-hidden="true" style="font-size:1.2rem; opacity:0.4;" />
+            <span>No commits cached for this sprint.</span>
+          </div>
         </template>
-        <div v-else class="empty-text">No GitHub data cached. Refresh from the project dashboard.</div>
+        <div v-else class="empty-text">
+          <i class="pi pi-github" aria-hidden="true" style="font-size:1.2rem; opacity:0.4;" />
+          <span>No GitHub data cached. Refresh from the project dashboard.</span>
+        </div>
       </div>
 
     </template>
@@ -300,6 +314,15 @@ watch(sprintId, fetchSprintDetail)
   display: flex;
   flex-direction: column;
   gap: 1.25rem;
+  max-width: 960px;
+  margin: 0 auto;
+}
+
+@media (max-width: 600px) {
+  .review-page { padding: 1rem 0.75rem; }
+  .page-title { font-size: 1.1rem; }
+  .sprint-name { font-size: 1rem; }
+  .hero-top { flex-direction: column; gap: 0.6rem; }
 }
 
 /* ── Header ────────────────────────────────────────────────────────────────── */
@@ -358,7 +381,10 @@ watch(sprintId, fetchSprintDetail)
   align-items: flex-start;
   justify-content: space-between;
   gap: 1rem;
+  flex-wrap: wrap;
 }
+
+.hero-info { flex: 1; min-width: 0; }
 
 .sprint-name {
   font-size: 1.25rem;
@@ -535,6 +561,22 @@ watch(sprintId, fetchSprintDetail)
   border-radius: 6px;
   padding: 0.45rem 0.65rem;
   font-size: 0.8rem;
+  text-decoration: none;
+  color: inherit;
+  transition: border-color 0.2s, box-shadow 0.15s;
+}
+.commit-row:hover {
+  border-color: var(--su-border-glow);
+  box-shadow: 0 0 6px 1px rgba(124, 58, 237, 0.2);
+}
+.commit-row:focus-visible {
+  outline: 2px solid var(--su-border-glow);
+  outline-offset: 2px;
+}
+
+@media (max-width: 500px) {
+  .commit-row { flex-wrap: wrap; }
+  .commit-author { width: 100%; }
 }
 
 .commit-sha {
@@ -578,10 +620,14 @@ watch(sprintId, fetchSprintDetail)
 .mb-4 { margin-bottom: 1rem; }
 
 .empty-text {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.4rem;
   color: var(--su-text-muted);
   font-size: 0.82rem;
   text-align: center;
-  padding: 1rem 0;
+  padding: 1.25rem 0;
 }
 
 /* ── Print styles ──────────────────────────────────────────────────────────── */

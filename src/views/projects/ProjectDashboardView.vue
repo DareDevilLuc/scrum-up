@@ -133,6 +133,7 @@ function initials(name: string): string {
           icon="pi pi-arrow-left"
           text
           class="back-btn"
+          aria-label="Back to projects list"
           @click="router.push({ name: 'projects' })"
         />
         <div class="header-text">
@@ -146,13 +147,13 @@ function initials(name: string): string {
           </div>
           <p class="page-subtitle">
             <span v-if="dashboard.project.team_name">
-              <i class="pi pi-users" /> {{ dashboard.project.team_name }}
+              <i class="pi pi-users" aria-hidden="true" /> {{ dashboard.project.team_name }}
             </span>
             <span v-if="dashboard.project.client_name">
-              &nbsp;&middot;&nbsp;<i class="pi pi-building" /> {{ dashboard.project.client_name }}
+              &nbsp;&middot;&nbsp;<i class="pi pi-building" aria-hidden="true" /> {{ dashboard.project.client_name }}
             </span>
             <span v-if="dashboard.project.start_date">
-              &nbsp;&middot;&nbsp;<i class="pi pi-calendar" />
+              &nbsp;&middot;&nbsp;<i class="pi pi-calendar" aria-hidden="true" />
               {{ formatDate(dashboard.project.start_date) }} –
               {{ formatDate(dashboard.project.end_date) }}
             </span>
@@ -174,7 +175,7 @@ function initials(name: string): string {
 
             <!-- No sprints CTA -->
             <div v-if="dashboard.sprints.length === 0" class="empty-state">
-              <i class="pi pi-calendar-times empty-icon" />
+              <i class="pi pi-calendar-times empty-icon" aria-hidden="true" />
               <p class="empty-text">No sprints yet.</p>
               <Button
                 v-if="isProjectHead"
@@ -232,11 +233,13 @@ function initials(name: string): string {
             <div v-if="dashboard.teamMembers.length === 0" class="empty-text-sm">
               No team members found.
             </div>
-            <div v-else class="team-strip">
+            <div v-else class="team-strip" role="list">
               <button
                 v-for="member in dashboard.teamMembers"
                 :key="member.user_id"
                 class="team-member"
+                role="listitem"
+                :aria-label="`View profile of ${member.display_name}`"
                 @click="router.push({ name: 'profile', params: { userId: member.user_id } })"
               >
                 <Avatar
@@ -266,7 +269,7 @@ function initials(name: string): string {
           <template v-if="dashboard.currentSprint">
             <div class="metrics-header">
               <span class="metrics-label">Metrics — {{ dashboard.currentSprint.name }}</span>
-              <ProgressSpinner v-if="metrics.loading.value" style="width:18px;height:18px" />
+              <ProgressSpinner v-if="metrics.loading.value" style="width:18px;height:18px" aria-label="Loading metrics" />
             </div>
             <div class="metrics-grid">
               <!-- Sprint Completion Ring -->
@@ -311,9 +314,9 @@ function initials(name: string): string {
           </template>
 
           <!-- No sprint selected -->
-          <div v-else class="no-sprint-metrics">
-            <i class="pi pi-info-circle" />
-            Select a sprint to see metrics.
+          <div v-else class="no-sprint-metrics" role="status">
+            <i class="pi pi-info-circle" aria-hidden="true" />
+            Select a sprint from the left to view metrics.
           </div>
 
           <!-- Sprint AI Summary -->
@@ -445,8 +448,14 @@ function initials(name: string): string {
   gap: 1.5rem;
   align-items: start;
 }
-@media (max-width: 900px) {
+@media (max-width: 960px) {
   .body-grid { grid-template-columns: 1fr; }
+  .dashboard { padding: 1.25rem; }
+}
+@media (max-width: 600px) {
+  .dashboard { padding: 1rem 0.75rem; }
+  .page-header { flex-wrap: wrap; }
+  .page-title { font-size: 1.35rem; }
 }
 
 /* ── Section card ── */
@@ -489,9 +498,11 @@ function initials(name: string): string {
   cursor: pointer;
   transition: border-color 0.2s, box-shadow 0.2s;
 }
-.sprint-item:hover {
+.sprint-item:hover,
+.sprint-item:focus-visible {
   border-color: var(--su-border-glow);
   box-shadow: 0 0 8px 2px rgba(124, 58, 237, 0.2);
+  outline: none;
 }
 .sprint-item--active {
   border-color: var(--su-border-glow);
@@ -570,9 +581,16 @@ function initials(name: string): string {
   align-items: center;
   gap: 0.3rem;
   cursor: pointer;
-  transition: opacity 0.2s;
+  transition: opacity 0.2s, outline 0.15s;
+  border-radius: 8px;
+  padding: 0.25rem;
 }
 .team-member:hover { opacity: 0.8; }
+.team-member:focus-visible {
+  outline: 2px solid var(--su-border-glow);
+  outline-offset: 2px;
+  box-shadow: 0 0 8px 2px rgba(124, 58, 237, 0.35);
+}
 .member-name {
   font-size: 0.72rem;
   color: var(--su-text-muted);
@@ -595,6 +613,9 @@ function initials(name: string): string {
 
 /* ── Metrics ── */
 .metrics-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
   margin-bottom: 0.75rem;
 }
 .metrics-label {
@@ -610,7 +631,7 @@ function initials(name: string): string {
   gap: 1rem;
   margin-bottom: 1.5rem;
 }
-@media (max-width: 600px) {
+@media (max-width: 700px) {
   .metrics-grid { grid-template-columns: 1fr; }
 }
 
@@ -650,10 +671,14 @@ function initials(name: string): string {
   cursor: pointer;
   transition: border-color 0.2s, box-shadow 0.2s;
   margin-bottom: 1.5rem;
+  outline: none;
 }
-.action-tile:hover {
+.action-tile:hover,
+.action-tile:focus-visible {
   border-color: var(--su-border-glow);
   box-shadow: 0 0 16px 4px rgba(124, 58, 237, 0.3);
+  outline: 2px solid var(--su-border-glow);
+  outline-offset: 2px;
 }
 .action-icon {
   font-size: 1.4rem;
