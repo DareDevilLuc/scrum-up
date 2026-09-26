@@ -309,7 +309,7 @@ Allow each developer to have a profile that is auto-populated from their GitHub 
 
 ## Sub-Task 6 — Team Management
 
-**Status:** `[ ] pending`
+**Status:** `[x] complete`
 
 **Intent:**
 Allow super-admins to manage teams (created in Sub-Task 4) and give project heads visibility into their assigned teams and team members' profiles. This is the prerequisite for project creation — a project must be assigned to a team.
@@ -375,7 +375,7 @@ Build the project creation form that is only accessible to users with the `proje
 
 ## Sub-Task 8 — AI Sprint Planner
 
-**Status:** `[ ] pending`
+**Status:** `[x] complete`
 
 **Intent:**
 Create the AI-powered sprint planning feature. Given the project requirements, timeline, and team member profiles, GPT-4o returns a prioritized breakdown of sprints, each with suggested tasks and recommended developer assignments. The project head can review and edit these suggestions before committing them to the database.
@@ -390,8 +390,8 @@ Create the AI-powered sprint planning feature. Given the project requirements, t
 **Todo List:**
 1. Create Supabase Edge Function `supabase/functions/generate-sprint-plan/index.ts`:
    - Input: `{ project_id, requirements, start_date, end_date, team_members: [{ user_id, display_name, tech_stack, languages, experience_years }] }`
-   - Build a GPT-4o prompt that instructs the model to return JSON: `{ sprints: [{ name, goal, start_date, end_date, tasks: [{ title, description, priority, story_points, suggested_assignee_user_id }] }] }`
-   - Use structured output / JSON mode in the OpenAI API call
+   - Build a prompt that instructs the model to return JSON: `{ sprints: [{ name, goal, start_date, end_date, tasks: [{ title, description, priority, story_points, suggested_assignee_user_id }] }] }`
+   - Use `response_format: { type: 'json_object' }` (Groq supports this on `llama-3.3-70b-versatile`)
    - Return the parsed JSON to the caller
 2. Create `src/views/projects/SprintPlannerView.vue`:
    - "Generate Plan" button with loading state
@@ -406,14 +406,15 @@ Create the AI-powered sprint planning feature. Given the project requirements, t
 **Relevant Context:**
 - `sprints`, `tasks`, `task_assignments` tables from Sub-Task 3
 - `developer_profiles.tech_stack` and `developer_profiles.languages` from Sub-Task 5 are the key inputs for matching
-- OpenAI API key must be set as a Supabase Edge Function secret (`supabase secrets set OPENAI_API_KEY=...`), not in the frontend `.env`
-- Use OpenAI `response_format: { type: 'json_object' }` to guarantee parseable output
+- **Using Groq (free tier)** instead of OpenAI — set secret: `supabase secrets set GROQ_API_KEY=...`
+- Model: `llama3-70b-8192` via `https://api.groq.com/openai/v1` (OpenAI-compatible)
+- Use `response_format: { type: 'json_object' }` to guarantee parseable output
 
 ---
 
 ## Sub-Task 9 — Task Kanban Board
 
-**Status:** `[ ] pending`
+**Status:** `[x] complete`
 
 **Intent:**
 Build a per-sprint Kanban board where developers can move their assigned tasks through `todo → in_progress → done` columns. Project heads can also create new tasks, reassign, and edit details. This is the day-to-day task tracking interface.
@@ -451,6 +452,40 @@ Build a per-sprint Kanban board where developers can move their assigned tasks t
 
 ---
 
+## Sub-Task 9b — User Home Dashboard
+
+**Status:** `[x] complete`
+
+**Intent:**
+Build the `/dashboard` page that serves as the personal home screen after login. It shows the user's own projects and their assigned tasks across all active sprints, giving them an at-a-glance view of what to work on next.
+
+**Expected Outcomes:**
+- `/dashboard` renders a personalised home page with: welcome header (display name, avatar, role badge), "My Projects" panel, and "My Tasks" panel
+- My Projects: lists all projects the current user is a member of (via team membership or `created_by`), each card shows name, status, team name, and sprint count; clicking navigates to `/projects/:id`
+- My Tasks: lists tasks assigned to the user across all active sprints, grouped by sprint, each item shows title, priority badge, story points, and a link to the Kanban board
+- Empty states shown when there are no projects or assigned tasks
+
+**Todo List:**
+1. Create `src/stores/home.ts` — Pinia setup store:
+   - `fetchMyProjects(userId)` — queries projects where user is a team member or `created_by`
+   - `fetchMyTasks(userId)` — queries `task_assignments` joined to `tasks`, `sprints`, `projects` filtered to `sprints.status = 'active'`
+   - Exposes `myProjects`, `myTasks`, `loading`, `error`
+2. Create `src/views/DashboardView.vue` — replace the placeholder:
+   - Welcome header: avatar (`Avatar` component), display name, role `Tag`
+   - "My Projects" section: responsive card grid using project data from store
+   - "My Tasks" section: list of task rows grouped by sprint name, each with priority badge and "Open Board" link
+   - Uses `useAuthStore` for current user identity
+   - Loading spinner and empty states for both panels
+3. No new routes needed — `/dashboard` already exists in the router
+
+**Relevant Context:**
+- `team_members`, `projects`, `tasks`, `task_assignments`, `sprints` tables from Sub-Task 3
+- `useAuthStore` for `auth.user.id` and `auth.role`
+- PrimeVue `Avatar`, `Tag`, `Card`, `Badge` components
+- Links into existing `project-detail` and `kanban` named routes
+
+---
+
 ## Sub-Task 10 — Project Dashboard Shell
 
 **Status:** `[x] complete`
@@ -485,7 +520,7 @@ Build the project-level dashboard that serves as the hub for all project metrics
 
 ## Sub-Task 11 — GitHub Integration
 
-**Status:** `[ ] pending`
+**Status:** `[x] complete`
 
 **Intent:**
 Allow a project head to link a GitHub repository to a project. Once linked, the platform fetches commits, pull requests, and issues for each sprint's date window and displays them in an activity feed on the dashboard. This data also feeds the AI sprint summary in Sub-Task 13.
@@ -527,7 +562,7 @@ Allow a project head to link a GitHub repository to a project. Once linked, the 
 
 ## Sub-Task 12 — Metrics and Charts
 
-**Status:** `[ ] pending`
+**Status:** `[x] complete`
 
 **Intent:**
 Implement the four required dashboard charts: burndown chart, velocity chart, commit frequency chart, and a sprint completion summary. These visualize the incremental work data for sprint reviews and retrospectives.
@@ -574,7 +609,7 @@ Implement the four required dashboard charts: burndown chart, velocity chart, co
 
 ## Sub-Task 13 — AI Sprint Summaries
 
-**Status:** `[ ] pending`
+**Status:** `[x] complete`
 
 **Intent:**
 Generate AI-written natural language summaries for each sprint and for the project as a whole. These are used in sprint reviews and retrospectives. The summary is generated on demand by the project head and stored in the database.
@@ -611,7 +646,7 @@ Generate AI-written natural language summaries for each sprint and for the proje
 
 ## Sub-Task 14 — Sprint Review and Retrospective Views
 
-**Status:** `[ ] pending`
+**Status:** `[x] complete`
 
 **Intent:**
 Build dedicated pages for sprint reviews and retrospectives. The review page is a presentation-ready view of sprint metrics and delivery. The retrospective page allows the team to record structured notes (went well, could improve, action items).
@@ -651,6 +686,7 @@ Build dedicated pages for sprint reviews and retrospectives. The review page is 
 1 (Scaffold) → 2 (Auth) → 3 (Schema) → 4 (Admin) → 6 (Teams)
                                       ↘ 5 (Profiles) ↗
 3 (Schema) → 7 (Project Creation) → 8 (AI Planner) → 9 (Kanban)
+                                                    → 9b (Home Dashboard)
 7 → 10 (Dashboard Shell) → 11 (GitHub) → 12 (Charts)
                           → 12 (Charts)
 11 + 12 → 13 (AI Summaries) → 14 (Review + Retro)
@@ -662,7 +698,7 @@ Build dedicated pages for sprint reviews and retrospectives. The review page is 
 |---|---|---|
 | `VITE_SUPABASE_URL` | Frontend `.env` | Supabase project URL |
 | `VITE_SUPABASE_ANON_KEY` | Frontend `.env` | Supabase anon/public key |
-| `OPENAI_API_KEY` | Supabase Edge Function Secret | GPT-4o API access |
+| `GROQ_API_KEY` | Supabase Edge Function Secret | Groq Llama 3.3 70B API access (AI sprint planner) |
 | `GITHUB_CLIENT_ID` | Supabase Auth dashboard | GitHub OAuth App client ID |
 | `GITHUB_CLIENT_SECRET` | Supabase Auth dashboard | GitHub OAuth App secret |
 
@@ -679,6 +715,6 @@ Build dedicated pages for sprint reviews and retrospectives. The review page is 
 | Backend / DB | Supabase (PostgreSQL + RLS) |
 | Auth | Supabase Auth + GitHub OAuth |
 | Serverless Functions | Supabase Edge Functions (Deno/TypeScript) |
-| AI | OpenAI GPT-4o via REST API |
+| AI | Groq `llama3-70b-8192` via OpenAI-compatible REST API |
 | GitHub Integration | GitHub REST API v3 |
 | Deployment | Vercel (frontend) + Supabase Cloud (backend) |

@@ -88,6 +88,30 @@ const routes: RouteRecordRaw[] = [
     component: () => import('../views/projects/ProjectDashboardView.vue'),
     beforeEnter: requireAuth,
   },
+  {
+    path: '/projects/:id/sprints/:sprintId',
+    name: 'kanban',
+    component: () => import('../views/projects/KanbanView.vue'),
+    beforeEnter: requireAuth,
+  },
+  {
+    path: '/projects/:id/sprints/:sprintId/review',
+    name: 'sprint-review',
+    component: () => import('../views/projects/SprintReviewView.vue'),
+    beforeEnter: requireAuth,
+  },
+  {
+    path: '/projects/:id/sprints/:sprintId/retro',
+    name: 'sprint-retro',
+    component: () => import('../views/projects/SprintRetroView.vue'),
+    beforeEnter: requireAuth,
+  },
+  {
+    path: '/projects/:id/plan-sprint',
+    name: 'sprint-planner',
+    component: () => import('../views/projects/SprintPlannerView.vue'),
+    beforeEnter: requireRole(['project_head', 'super_admin']),
+  },
 
   // ── Profiles ──────────────────────────────────────────────────────────────
   {
