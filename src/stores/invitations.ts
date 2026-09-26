@@ -105,6 +105,10 @@ export const useInvitationsStore = defineStore('invitations', () => {
         scope_id: inv.team_id,
       })
 
+      // 4. Refresh auth.role so the UI immediately reflects the new role
+      //    without requiring a page reload.
+      await auth.refreshRole()
+
       // Remove from local pending list
       pending.value = pending.value.filter((i) => i.id !== invitationId)
     } catch (e) {
