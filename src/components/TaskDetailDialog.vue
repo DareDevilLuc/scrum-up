@@ -60,17 +60,17 @@ const memberOptions = computed(() =>
 
 watch(
   () => [props.visible, props.task] as const,
-  ([vis]) => {
+  ([vis, task]) => {
     if (!vis) {
       deleteConfirm.value = false
       return
     }
-    if (props.task) {
-      title.value = props.task.title
-      description.value = props.task.description ?? ''
-      priority.value = props.task.priority
-      storyPoints.value = props.task.story_points ?? null
-      assigneeIds.value = props.task.assignees.map((a) => a.user_id)
+    if (task) {
+      title.value = task.title
+      description.value = task.description ?? ''
+      priority.value = task.priority
+      storyPoints.value = task.story_points ?? null
+      assigneeIds.value = task.assignees.map((a) => a.user_id)
     } else {
       title.value = ''
       description.value = ''
@@ -97,7 +97,7 @@ async function save() {
   }
 
   try {
-    await kanban.saveTask(payload, props.sprintId, props.task?.id)
+    await kanban.saveTask(payload, props.sprintId, props.task?.id, props.isProjectHead)
     toast.add({ severity: 'success', summary: 'Saved', detail: 'Task saved successfully', life: 3000 })
     emit('saved')
     emit('update:visible', false)
@@ -168,8 +168,8 @@ async function confirmDelete() {
         </div>
       </div>
 
-      <!-- Assignees -->
-      <div class="field">
+      <!-- Assignees (project head only) -->
+      <div class="field" v-if="isProjectHead">
         <label class="field-label">Assignees</label>
         <MultiSelect
           v-model="assigneeIds"

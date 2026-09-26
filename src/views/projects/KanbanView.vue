@@ -57,24 +57,17 @@ function openCreateTask() {
 
 // ── Drag-and-drop ─────────────────────────────────────────────────────────────
 
-// Each column manages its own list. We clone from the store so draggable can
-// mutate locally, then we persist the status change to Supabase.
-const todoList = computed({
-  get: () => kanban.todoTasks,
-  set: () => {},
-})
-const inProgressList = computed({
-  get: () => kanban.inProgressTasks,
-  set: () => {},
-})
-const doneList = computed({
-  get: () => kanban.doneTasks,
-  set: () => {},
-})
+// Each column exposes the store's filtered arrays directly.
+// vuedraggable mutates them during drag; we persist via @change (added event)
+// which fires only on the destination column with the dropped element.
+const todoList = computed(() => kanban.todoTasks)
+const inProgressList = computed(() => kanban.inProgressTasks)
+const doneList = computed(() => kanban.doneTasks)
 
-async function onDragEnd(event: any, newStatus: TaskStatus) {
-  const task: Task | undefined = event.item?.__draggable_context?.element
-  if (!task) return
+async function onDragChange(event: any, newStatus: TaskStatus) {
+  // @change fires on the column the card was dropped INTO with { added: { element } }
+  if (!event.added) return
+  const task: Task = event.added.element
   if (task.status === newStatus) return
 
   // Authorisation: developers can only move their own tasks
@@ -109,9 +102,10 @@ onMounted(async () => {
   if (kanban.currentProjectId !== projectId.value) {
     await kanban.fetchSprints(projectId.value)
   }
-  // Load tasks for current sprint
-  selectedSprintId.value = sprintId.value
+  // Load tasks for current sprint — set selectedSprintId AFTER fetchTasks so the
+  // watcher below doesn't also trigger a fetch for the initial value.
   await kanban.fetchTasks(sprintId.value)
+  selectedSprintId.value = sprintId.value
 
   // Load dashboard for team members (needed for the assignee picker)
   if (dashboard.project?.id !== projectId.value) {
@@ -119,7 +113,9 @@ onMounted(async () => {
   }
 })
 
-// When sprint selector changes, navigate to the new sprint URL
+// When sprint selector changes, navigate to the new sprint URL and load tasks.
+// The route param sprintId is still the OLD value at this point, so the guard
+// `newId !== sprintId.value` correctly prevents firing on the initial assignment.
 watch(selectedSprintId, async (newId) => {
   if (newId && newId !== sprintId.value) {
     await router.push({ name: 'kanban', params: { id: projectId.value, sprintId: newId } })
@@ -202,18 +198,18 @@ watch(selectedSprintId, async (newId) => {
           <span class="column-count">{{ todoList.length }}</span>
         </div>
         <draggable
-          :list="kanban.tasks.filter(t => t.status === 'todo')"
+          :list="todoList"
           group="tasks"
           item-key="id"
           class="column-cards"
           ghost-class="card-ghost"
-          @end="(e) => onDragEnd(e, 'todo')"
+          @change="(e) => onDragChange(e, 'todo')"
         >
           <template #item="{ element }">
             <TaskCard :task="element" @open="openTask" />
           </template>
           <template #footer>
-            <div v-if="kanban.tasks.filter(t => t.status === 'todo').length === 0" class="empty-col">
+            <div v-if="todoList.length === 0" class="empty-col">
               <i class="pi pi-inbox empty-col-icon" />
               <span>No tasks here</span>
             </div>
@@ -228,18 +224,18 @@ watch(selectedSprintId, async (newId) => {
           <span class="column-count">{{ inProgressList.length }}</span>
         </div>
         <draggable
-          :list="kanban.tasks.filter(t => t.status === 'in_progress')"
+          :list="inProgressList"
           group="tasks"
           item-key="id"
           class="column-cards"
           ghost-class="card-ghost"
-          @end="(e) => onDragEnd(e, 'in_progress')"
+          @change="(e) => onDragChange(e, 'in_progress')"
         >
           <template #item="{ element }">
             <TaskCard :task="element" @open="openTask" />
           </template>
           <template #footer>
-            <div v-if="kanban.tasks.filter(t => t.status === 'in_progress').length === 0" class="empty-col">
+            <div v-if="inProgressList.length === 0" class="empty-col">
               <i class="pi pi-inbox empty-col-icon" />
               <span>No tasks here</span>
             </div>
@@ -254,18 +250,18 @@ watch(selectedSprintId, async (newId) => {
           <span class="column-count">{{ doneList.length }}</span>
         </div>
         <draggable
-          :list="kanban.tasks.filter(t => t.status === 'done')"
+          :list="doneList"
           group="tasks"
           item-key="id"
           class="column-cards"
           ghost-class="card-ghost"
-          @end="(e) => onDragEnd(e, 'done')"
+          @change="(e) => onDragChange(e, 'done')"
         >
           <template #item="{ element }">
             <TaskCard :task="element" @open="openTask" />
           </template>
           <template #footer>
-            <div v-if="kanban.tasks.filter(t => t.status === 'done').length === 0" class="empty-col">
+            <div v-if="doneList.length === 0" class="empty-col">
               <i class="pi pi-inbox empty-col-icon" />
               <span>No tasks here</span>
             </div>
