@@ -25,6 +25,12 @@ export interface TeamMemberStrip {
   avatar_url: string | null
 }
 
+export interface LinkedRepo {
+  id: string
+  repo_full_name: string
+  repo_url: string
+}
+
 // ── Store ─────────────────────────────────────────────────────────────────────
 
 export const useDashboardStore = defineStore('dashboard', () => {
@@ -33,6 +39,7 @@ export const useDashboardStore = defineStore('dashboard', () => {
   const sprints = ref<Sprint[]>([])
   const teamMembers = ref<TeamMemberStrip[]>([])
   const currentSprint = ref<Sprint | null>(null)
+  const linkedRepo = ref<LinkedRepo | null>(null)
   const loading = ref(false)
   const error = ref<string | null>(null)
 
@@ -104,7 +111,18 @@ export const useDashboardStore = defineStore('dashboard', () => {
       // Default selection: active sprint, else first
       currentSprint.value = enriched.find((s) => s.status === 'active') ?? enriched[0] ?? null
 
-      // 3. Team members strip
+      // 3. Linked GitHub repo
+      const { data: repoRow } = await supabase
+        .from('github_repos')
+        .select('id, repo_full_name, repo_url')
+        .eq('project_id', projectId)
+        .maybeSingle()
+
+      linkedRepo.value = repoRow
+        ? { id: repoRow.id, repo_full_name: repoRow.repo_full_name, repo_url: repoRow.repo_url }
+        : null
+
+      // 4. Team members strip
       const teamId = project.value?.team_id
       if (teamId) {
         const { data: members } = await supabase
@@ -136,6 +154,7 @@ export const useDashboardStore = defineStore('dashboard', () => {
     sprints.value = []
     teamMembers.value = []
     currentSprint.value = null
+    linkedRepo.value = null
     loading.value = false
     error.value = null
   }
@@ -145,6 +164,7 @@ export const useDashboardStore = defineStore('dashboard', () => {
     sprints,
     teamMembers,
     currentSprint,
+    linkedRepo,
     loading,
     error,
     activeSprint,

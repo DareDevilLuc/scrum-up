@@ -486,7 +486,7 @@ Build the project-level dashboard that serves as the hub for all project metrics
 
 ## Sub-Task 11 — GitHub Integration
 
-**Status:** `[ ] pending`
+**Status:** `[x] complete`
 
 **Intent:**
 Allow a project head to link a GitHub repository to a project. Once linked, the platform fetches commits, pull requests, and issues for each sprint's date window and displays them in an activity feed on the dashboard. This data also feeds the AI sprint summary in Sub-Task 13.
