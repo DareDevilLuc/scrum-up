@@ -139,8 +139,10 @@ export const useKanbanStore = defineStore('kanban', () => {
     taskData: TaskFormData,
     sprintId: string,
     taskId?: string,
+    canManageAssignees = false,
   ): Promise<string> {
     saving.value = true
+    error.value = null
     try {
       const payload = {
         title: taskData.title,
@@ -167,14 +169,16 @@ export const useKanbanStore = defineStore('kanban', () => {
         id = (data as any).id
       }
 
-      // Upsert task_assignments: delete all existing then insert new ones
-      await supabase.from('task_assignments').delete().eq('task_id', id)
+      // Only project heads can modify assignments
+      if (canManageAssignees) {
+        await supabase.from('task_assignments').delete().eq('task_id', id)
 
-      if (taskData.assignee_ids.length > 0) {
-        const { error: assignErr } = await supabase.from('task_assignments').insert(
-          taskData.assignee_ids.map((uid) => ({ task_id: id, user_id: uid })),
-        )
-        if (assignErr) throw assignErr
+        if (taskData.assignee_ids.length > 0) {
+          const { error: assignErr } = await supabase.from('task_assignments').insert(
+            taskData.assignee_ids.map((uid) => ({ task_id: id, user_id: uid })),
+          )
+          if (assignErr) throw assignErr
+        }
       }
 
       // Refresh tasks list
@@ -183,6 +187,9 @@ export const useKanbanStore = defineStore('kanban', () => {
       }
 
       return id
+    } catch (e) {
+      error.value = (e as Error).message
+      throw e
     } finally {
       saving.value = false
     }
