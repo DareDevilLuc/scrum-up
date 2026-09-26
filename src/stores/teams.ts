@@ -234,6 +234,80 @@ export const useTeamsStore = defineStore('teams', () => {
     }
   }
 
+  /**
+   * Kick a member from the team. Sends them an in-app notification.
+   * The caller (project_head) cannot kick themselves or another project_head.
+   */
+  async function kickMember(teamId: string, targetUserId: string) {
+    const auth = useAuthStore()
+    const teamName = currentTeam.value?.name ?? 'your team'
+
+    // 1. Remove from team_members
+    const { error: deleteError } = await supabase
+      .from('team_members')
+      .delete()
+      .eq('team_id', teamId)
+      .eq('user_id', targetUserId)
+
+    if (deleteError) throw deleteError
+
+    // 2. Remove their team-scoped role row
+    await supabase
+      .from('user_roles')
+      .delete()
+      .eq('user_id', targetUserId)
+      .eq('scope_type', 'team')
+      .eq('scope_id', teamId)
+
+    // 3. Send notification to removed user
+    await supabase.from('notifications').insert({
+      user_id: targetUserId,
+      type: 'kicked',
+      title: 'You were removed from a team',
+      body: `You have been removed from "${teamName}" by ${auth.user?.user_metadata?.user_name ?? 'the project head'}.`,
+    })
+
+    // 4. Remove from local state immediately
+    currentMembers.value = currentMembers.value.filter((m) => m.user_id !== targetUserId)
+  }
+
+  /**
+   * Delete the entire team. Notifies all members before deletion.
+   * CASCADE on the DB will clean up team_members, projects (if linked), etc.
+   */
+  async function deleteTeam(teamId: string) {
+    const teamName = currentTeam.value?.name ?? 'your team'
+    const memberIds = currentMembers.value
+      .map((m) => m.user_id)
+      .filter((id) => id !== useAuthStore().user?.id)
+
+    // 1. Notify all other members before deleting
+    if (memberIds.length > 0) {
+      await supabase.from('notifications').insert(
+        memberIds.map((uid) => ({
+          user_id: uid,
+          type: 'team_deleted',
+          title: 'A team you were in was deleted',
+          body: `The team "${teamName}" has been deleted by the project head.`,
+        })),
+      )
+    }
+
+    // 2. Delete the team (CASCADE removes team_members, team_invitations, etc.)
+    const { error: deleteError } = await supabase
+      .from('teams')
+      .delete()
+      .eq('id', teamId)
+
+    if (deleteError) throw deleteError
+
+    // 3. Clear local state
+    currentTeam.value = null
+    currentMembers.value = []
+    currentTeamProjects.value = []
+    myTeams.value = myTeams.value.filter((t) => t.id !== teamId)
+  }
+
   // ── Reset ──────────────────────────────────────────────────────────────────
   function $reset() {
     myTeams.value = []
@@ -255,6 +329,8 @@ export const useTeamsStore = defineStore('teams', () => {
     fetchTeamDetail,
     fetchTeamMembers,
     fetchTeamProjects,
+    kickMember,
+    deleteTeam,
     $reset,
   }
 })

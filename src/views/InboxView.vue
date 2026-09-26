@@ -6,14 +6,19 @@ import Avatar from 'primevue/avatar'
 import ProgressSpinner from 'primevue/progressspinner'
 import Message from 'primevue/message'
 import { useInvitationsStore } from '@/stores/invitations'
+import { useNotificationsStore } from '@/stores/notifications'
 import type { TeamInvitation } from '@/stores/invitations'
 
 const router = useRouter()
-const store = useInvitationsStore()
+const invStore = useInvitationsStore()
+const notifStore = useNotificationsStore()
 
-onMounted(() => store.fetchPending())
+onMounted(async () => {
+  await Promise.all([invStore.fetchPending(), notifStore.fetchAll()])
+})
 
-// Per-card action loading state
+// ── Invitation actions ────────────────────────────────────────────────────────
+
 const actionLoading = ref<Record<string, 'accept' | 'decline' | null>>({})
 const actionError = ref<Record<string, string | null>>({})
 
@@ -21,7 +26,7 @@ async function accept(inv: TeamInvitation) {
   actionLoading.value[inv.id] = 'accept'
   actionError.value[inv.id] = null
   try {
-    await store.accept(inv.id)
+    await invStore.accept(inv.id)
   } catch (e) {
     actionError.value[inv.id] = (e as Error).message
   } finally {
@@ -33,13 +38,15 @@ async function decline(inv: TeamInvitation) {
   actionLoading.value[inv.id] = 'decline'
   actionError.value[inv.id] = null
   try {
-    await store.decline(inv.id)
+    await invStore.decline(inv.id)
   } catch (e) {
     actionError.value[inv.id] = (e as Error).message
   } finally {
     actionLoading.value[inv.id] = null
   }
 }
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
 
 function initials(name: string | null): string {
   if (!name) return '?'
@@ -59,6 +66,24 @@ function timeAgo(dateStr: string): string {
   const days = Math.floor(hours / 24)
   return `${days}d ago`
 }
+
+function notifIcon(type: string): string {
+  if (type === 'kicked') return 'pi pi-user-minus'
+  if (type === 'team_deleted') return 'pi pi-trash'
+  return 'pi pi-bell'
+}
+
+function notifClass(type: string): string {
+  if (type === 'kicked' || type === 'team_deleted') return 'notif--danger'
+  return 'notif--info'
+}
+
+const loading = () => invStore.loading || notifStore.loading
+const isEmpty = () =>
+  !invStore.loading &&
+  !notifStore.loading &&
+  invStore.pending.length === 0 &&
+  notifStore.items.length === 0
 </script>
 
 <template>
@@ -72,106 +97,150 @@ function timeAgo(dateStr: string): string {
         aria-label="Back to dashboard"
         @click="router.push({ name: 'dashboard' })"
       />
-      <div>
+      <div class="header-text">
         <h1 class="page-title">
           <i class="pi pi-inbox title-icon" />
           Inbox
         </h1>
-        <p class="page-subtitle">Team invitations waiting for your response</p>
+        <p class="page-subtitle">Invitations and team notifications</p>
       </div>
+      <Button
+        v-if="notifStore.unreadCount > 0"
+        label="Mark all read"
+        icon="pi pi-check-circle"
+        text
+        size="small"
+        class="mark-all-btn"
+        @click="notifStore.markAllRead()"
+      />
     </div>
 
     <!-- Loading -->
-    <div v-if="store.loading" class="centered">
+    <div v-if="loading()" class="centered">
       <ProgressSpinner />
     </div>
 
-    <!-- Store-level error -->
-    <Message v-else-if="store.error" severity="error" :closable="false">
-      {{ store.error }}
-    </Message>
-
     <!-- Empty state -->
-    <div v-else-if="store.pending.length === 0" class="empty-state">
+    <div v-else-if="isEmpty()" class="empty-state">
       <i class="pi pi-check-circle empty-icon" />
       <p class="empty-title">All clear!</p>
-      <p class="empty-text">You have no pending team invitations.</p>
+      <p class="empty-text">No pending invitations or notifications.</p>
     </div>
 
-    <!-- Invitation cards -->
-    <div v-else class="invite-list">
-      <div
-        v-for="inv in store.pending"
-        :key="inv.id"
-        class="invite-card"
-      >
-        <!-- Inviter info -->
-        <div class="invite-card-top">
-          <Avatar
-            v-if="inv.inviter_avatar"
-            :image="inv.inviter_avatar"
-            shape="circle"
-            size="large"
-          />
-          <Avatar
-            v-else
-            :label="initials(inv.inviter_name)"
-            shape="circle"
-            size="large"
-            class="avatar-fallback"
-          />
-          <div class="invite-meta">
-            <p class="invite-from">
-              <span class="invite-inviter">{{ inv.inviter_name ?? 'Someone' }}</span>
-              invited you to join
-            </p>
-            <p class="invite-team">
-              <i class="pi pi-users" />
-              {{ inv.team_name ?? 'a team' }}
-            </p>
-            <div class="invite-tags">
-              <span class="role-badge" :class="inv.role === 'project_head' ? 'badge--head' : 'badge--dev'">
-                {{ roleLabel(inv.role) }}
-              </span>
-              <span class="time-badge">{{ timeAgo(inv.created_at) }}</span>
+    <template v-else>
+
+      <!-- ── Pending Invitations ───────────────────────────────────────────── -->
+      <section v-if="invStore.pending.length > 0" class="inbox-section">
+        <h2 class="section-label">
+          <i class="pi pi-envelope" />
+          Team Invitations
+          <span class="section-badge">{{ invStore.pending.length }}</span>
+        </h2>
+
+        <div class="invite-list">
+          <div
+            v-for="inv in invStore.pending"
+            :key="inv.id"
+            class="invite-card"
+          >
+            <div class="invite-card-top">
+              <Avatar
+                v-if="inv.inviter_avatar"
+                :image="inv.inviter_avatar"
+                shape="circle"
+                size="large"
+              />
+              <Avatar
+                v-else
+                :label="initials(inv.inviter_name)"
+                shape="circle"
+                size="large"
+                class="avatar-fallback"
+              />
+              <div class="invite-meta">
+                <p class="invite-from">
+                  <span class="invite-inviter">{{ inv.inviter_name ?? 'Someone' }}</span>
+                  invited you to join
+                </p>
+                <p class="invite-team">
+                  <i class="pi pi-users" />
+                  {{ inv.team_name ?? 'a team' }}
+                </p>
+                <div class="invite-tags">
+                  <span class="role-badge" :class="inv.role === 'project_head' ? 'badge--head' : 'badge--dev'">
+                    {{ roleLabel(inv.role) }}
+                  </span>
+                  <span class="time-badge">{{ timeAgo(inv.created_at) }}</span>
+                </div>
+              </div>
+            </div>
+
+            <Message
+              v-if="actionError[inv.id]"
+              severity="error"
+              :closable="false"
+              class="card-error"
+            >
+              {{ actionError[inv.id] }}
+            </Message>
+
+            <div class="invite-actions">
+              <Button
+                label="Accept"
+                icon="pi pi-check"
+                size="small"
+                :loading="actionLoading[inv.id] === 'accept'"
+                :disabled="!!actionLoading[inv.id]"
+                class="accept-btn"
+                @click="accept(inv)"
+              />
+              <Button
+                label="Decline"
+                icon="pi pi-times"
+                text
+                severity="secondary"
+                size="small"
+                :loading="actionLoading[inv.id] === 'decline'"
+                :disabled="!!actionLoading[inv.id]"
+                @click="decline(inv)"
+              />
             </div>
           </div>
         </div>
+      </section>
 
-        <!-- Per-card error -->
-        <Message
-          v-if="actionError[inv.id]"
-          severity="error"
-          :closable="false"
-          class="card-error"
-        >
-          {{ actionError[inv.id] }}
-        </Message>
+      <!-- ── Notifications ─────────────────────────────────────────────────── -->
+      <section v-if="notifStore.items.length > 0" class="inbox-section">
+        <h2 class="section-label">
+          <i class="pi pi-bell" />
+          Notifications
+          <span v-if="notifStore.unreadCount > 0" class="section-badge section-badge--danger">
+            {{ notifStore.unreadCount }} unread
+          </span>
+        </h2>
 
-        <!-- Actions -->
-        <div class="invite-actions">
-          <Button
-            label="Accept"
-            icon="pi pi-check"
-            size="small"
-            :loading="actionLoading[inv.id] === 'accept'"
-            :disabled="!!actionLoading[inv.id]"
-            class="accept-btn"
-            @click="accept(inv)"
-          />
-          <Button
-            label="Decline"
-            icon="pi pi-times"
-            text
-            severity="secondary"
-            size="small"
-            :loading="actionLoading[inv.id] === 'decline'"
-            :disabled="!!actionLoading[inv.id]"
-            @click="decline(inv)"
-          />
+        <div class="notif-list">
+          <div
+            v-for="notif in notifStore.items"
+            :key="notif.id"
+            class="notif-card"
+            :class="{ 'notif-card--unread': !notif.is_read }"
+            @click="notifStore.markRead(notif.id)"
+          >
+            <div class="notif-icon-wrap" :class="notifClass(notif.type)">
+              <i :class="notifIcon(notif.type)" />
+            </div>
+            <div class="notif-content">
+              <p class="notif-title">{{ notif.title }}</p>
+              <p class="notif-body">{{ notif.body }}</p>
+              <span class="notif-time">{{ timeAgo(notif.created_at) }}</span>
+            </div>
+            <div v-if="!notif.is_read" class="unread-dot" />
+          </div>
         </div>
-      </div>
-    </div>
+      </section>
+
+    </template>
   </div>
 </template>
 
@@ -182,7 +251,7 @@ function timeAgo(dateStr: string): string {
   padding: 1.5rem;
   display: flex;
   flex-direction: column;
-  gap: 1.25rem;
+  gap: 1.5rem;
   max-width: 680px;
   margin: 0 auto;
 }
@@ -196,6 +265,8 @@ function timeAgo(dateStr: string): string {
 }
 
 .back-btn { flex-shrink: 0; margin-top: 0.2rem; }
+
+.header-text { flex: 1; }
 
 .page-title {
   font-size: 1.35rem;
@@ -216,13 +287,11 @@ function timeAgo(dateStr: string): string {
   color: var(--su-text-muted);
 }
 
+.mark-all-btn { flex-shrink: 0; margin-top: 0.15rem; }
+
 /* ── States ──────────────────────────────────────────────────────────────────── */
 
-.centered {
-  display: flex;
-  justify-content: center;
-  padding: 4rem 0;
-}
+.centered { display: flex; justify-content: center; padding: 4rem 0; }
 
 .empty-state {
   display: flex;
@@ -233,32 +302,45 @@ function timeAgo(dateStr: string): string {
   text-align: center;
 }
 
-.empty-icon {
-  font-size: 2.5rem;
-  color: var(--su-success);
-  opacity: 0.6;
-}
+.empty-icon { font-size: 2.5rem; color: var(--su-success); opacity: 0.6; }
+.empty-title { margin: 0.25rem 0 0; font-size: 1rem; font-weight: 700; color: var(--su-text); }
+.empty-text  { margin: 0; font-size: 0.88rem; color: var(--su-text-muted); }
 
-.empty-title {
-  margin: 0.25rem 0 0;
-  font-size: 1rem;
-  font-weight: 700;
-  color: var(--su-text);
-}
+/* ── Sections ────────────────────────────────────────────────────────────────── */
 
-.empty-text {
-  margin: 0;
-  font-size: 0.88rem;
-  color: var(--su-text-muted);
-}
+.inbox-section { display: flex; flex-direction: column; gap: 0.75rem; }
 
-/* ── Invitation list ─────────────────────────────────────────────────────────── */
-
-.invite-list {
+.section-label {
   display: flex;
-  flex-direction: column;
-  gap: 0.9rem;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--su-purple-300);
+  margin: 0;
+  padding-bottom: 0.4rem;
+  border-bottom: 1px solid var(--su-border);
 }
+
+.section-badge {
+  background: rgba(124, 58, 237, 0.2);
+  color: var(--su-purple-300);
+  border-radius: 999px;
+  font-size: 0.65rem;
+  font-weight: 800;
+  padding: 0.05rem 0.45rem;
+}
+
+.section-badge--danger {
+  background: rgba(239, 68, 68, 0.15);
+  color: #f87171;
+}
+
+/* ── Invitation cards ────────────────────────────────────────────────────────── */
+
+.invite-list { display: flex; flex-direction: column; gap: 0.9rem; }
 
 .invite-card {
   background: var(--su-bg-surface);
@@ -277,13 +359,7 @@ function timeAgo(dateStr: string): string {
   box-shadow: 0 0 0 1px var(--su-border-glow), 0 0 18px 4px rgba(124, 58, 237, 0.25);
 }
 
-/* ── Card top section ────────────────────────────────────────────────────────── */
-
-.invite-card-top {
-  display: flex;
-  align-items: flex-start;
-  gap: 1rem;
-}
+.invite-card-top { display: flex; align-items: flex-start; gap: 1rem; }
 
 :deep(.avatar-fallback .p-avatar) {
   background: rgba(124, 58, 237, 0.25) !important;
@@ -291,24 +367,10 @@ function timeAgo(dateStr: string): string {
   font-weight: 700;
 }
 
-.invite-meta {
-  flex: 1;
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 0.3rem;
-}
+.invite-meta { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 0.3rem; }
 
-.invite-from {
-  margin: 0;
-  font-size: 0.9rem;
-  color: var(--su-text-muted);
-}
-
-.invite-inviter {
-  font-weight: 700;
-  color: var(--su-text);
-}
+.invite-from { margin: 0; font-size: 0.9rem; color: var(--su-text-muted); }
+.invite-inviter { font-weight: 700; color: var(--su-text); }
 
 .invite-team {
   margin: 0;
@@ -320,12 +382,7 @@ function timeAgo(dateStr: string): string {
   gap: 0.4rem;
 }
 
-.invite-tags {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  flex-wrap: wrap;
-}
+.invite-tags { display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; }
 
 .role-badge {
   font-size: 0.65rem;
@@ -348,30 +405,100 @@ function timeAgo(dateStr: string): string {
   border: 1px solid rgba(124, 58, 237, 0.35);
 }
 
-.time-badge {
-  font-size: 0.72rem;
-  color: var(--su-text-muted);
-}
-
-/* ── Card error ──────────────────────────────────────────────────────────────── */
+.time-badge { font-size: 0.72rem; color: var(--su-text-muted); }
 
 .card-error { margin: 0; }
 
-/* ── Card actions ────────────────────────────────────────────────────────────── */
-
-.invite-actions {
-  display: flex;
-  align-items: center;
-  gap: 0.6rem;
-}
+.invite-actions { display: flex; align-items: center; gap: 0.6rem; }
 
 :deep(.accept-btn.p-button) {
   background: linear-gradient(135deg, #4c1d95, #7c3aed);
   border-color: var(--su-border-glow);
   color: var(--su-purple-200);
 }
-
 :deep(.accept-btn.p-button:hover) {
   background: linear-gradient(135deg, #5b21b6, #a855f7);
+}
+
+/* ── Notification cards ──────────────────────────────────────────────────────── */
+
+.notif-list { display: flex; flex-direction: column; gap: 0.5rem; }
+
+.notif-card {
+  background: var(--su-bg-surface);
+  border: 1px solid var(--su-border);
+  border-radius: 10px;
+  padding: 0.9rem 1rem;
+  display: flex;
+  align-items: flex-start;
+  gap: 0.9rem;
+  cursor: pointer;
+  transition: border-color 0.15s, box-shadow 0.15s;
+  position: relative;
+}
+
+.notif-card:hover {
+  border-color: var(--su-border-glow);
+  box-shadow: 0 0 0 1px var(--su-border-glow), 0 0 12px 2px rgba(124, 58, 237, 0.2);
+}
+
+.notif-card--unread {
+  border-color: rgba(124, 58, 237, 0.35);
+  background: rgba(124, 58, 237, 0.04);
+}
+
+.notif-icon-wrap {
+  width: 2.2rem;
+  height: 2.2rem;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.9rem;
+  flex-shrink: 0;
+}
+
+.notif--danger {
+  background: rgba(239, 68, 68, 0.12);
+  color: #f87171;
+  border: 1px solid rgba(239, 68, 68, 0.25);
+}
+
+.notif--info {
+  background: rgba(124, 58, 237, 0.15);
+  color: var(--su-purple-300);
+  border: 1px solid rgba(124, 58, 237, 0.3);
+}
+
+.notif-content { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 0.2rem; }
+
+.notif-title {
+  margin: 0;
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--su-text);
+}
+
+.notif-body {
+  margin: 0;
+  font-size: 0.82rem;
+  color: var(--su-text-muted);
+  line-height: 1.5;
+}
+
+.notif-time {
+  font-size: 0.7rem;
+  color: var(--su-text-muted);
+  margin-top: 0.1rem;
+}
+
+.unread-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--su-purple-400);
+  box-shadow: 0 0 6px rgba(168, 85, 247, 0.7);
+  flex-shrink: 0;
+  margin-top: 0.35rem;
 }
 </style>

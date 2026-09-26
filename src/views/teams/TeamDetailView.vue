@@ -127,6 +127,51 @@ function inviteInitials(name: string | null): string {
   return name.split(' ').slice(0, 2).map((n) => n[0]?.toUpperCase() ?? '').join('')
 }
 
+// ── Kick member ───────────────────────────────────────────────────────────────
+
+const kickLoading = ref<Record<string, boolean>>({})
+const kickError = ref<string | null>(null)
+
+// A project_head can kick developers only (not other project_heads or super_admins)
+function canKick(member: TeamMemberProfile): boolean {
+  if (!isProjectHead.value) return false
+  if (member.user_id === auth.user?.id) return false           // can't kick self
+  if (member.role === 'project_head') return false             // can't kick another head
+  if (member.role === 'super_admin') return false              // can't kick super admin
+  return true
+}
+
+async function kickMember(member: TeamMemberProfile) {
+  kickError.value = null
+  kickLoading.value[member.user_id] = true
+  try {
+    await teams.kickMember(teamId.value, member.user_id)
+  } catch (e) {
+    kickError.value = (e as Error).message
+  } finally {
+    kickLoading.value[member.user_id] = false
+  }
+}
+
+// ── Delete team ───────────────────────────────────────────────────────────────
+
+const showDeleteConfirm = ref(false)
+const deleteLoading = ref(false)
+const deleteError = ref<string | null>(null)
+
+async function confirmDeleteTeam() {
+  deleteLoading.value = true
+  deleteError.value = null
+  try {
+    await teams.deleteTeam(teamId.value)
+    router.push({ name: 'teams' })
+  } catch (e) {
+    deleteError.value = (e as Error).message
+    deleteLoading.value = false
+    showDeleteConfirm.value = false
+  }
+}
+
 function initials(name: string | null): string {
   if (!name) return '?'
   return name.split(' ').slice(0, 2).map((n) => n[0]?.toUpperCase() ?? '').join('')
@@ -198,13 +243,56 @@ function statusLabel(status: string): string {
           </h1>
           <p class="page-subtitle">{{ teams.currentMembers.length }} member{{ teams.currentMembers.length !== 1 ? 's' : '' }}</p>
         </div>
-        <Button
-          v-if="auth.role === 'super_admin'"
-          label="Manage in Admin"
-          icon="pi pi-cog"
-          text
-          @click="router.push({ name: 'admin-teams' })"
-        />
+        <div class="header-buttons">
+          <Button
+            v-if="auth.role === 'super_admin'"
+            label="Manage in Admin"
+            icon="pi pi-cog"
+            text
+            @click="router.push({ name: 'admin-teams' })"
+          />
+          <Button
+            v-if="isProjectHead"
+            label="Delete Team"
+            icon="pi pi-trash"
+            severity="danger"
+            text
+            size="small"
+            @click="showDeleteConfirm = true"
+          />
+        </div>
+      </div>
+    </div>
+
+    <!-- Delete confirmation -->
+    <div v-if="showDeleteConfirm" class="confirm-overlay" @click.self="showDeleteConfirm = false">
+      <div class="confirm-dialog">
+        <h3 class="confirm-title">
+          <i class="pi pi-exclamation-triangle" /> Delete Team?
+        </h3>
+        <p class="confirm-body">
+          This will permanently delete <strong>{{ teams.currentTeam?.name }}</strong> and notify all members.
+          This cannot be undone.
+        </p>
+        <Message v-if="deleteError" severity="error" :closable="false" class="confirm-error">
+          {{ deleteError }}
+        </Message>
+        <div class="confirm-actions">
+          <Button
+            label="Delete permanently"
+            icon="pi pi-trash"
+            severity="danger"
+            :loading="deleteLoading"
+            @click="confirmDeleteTeam"
+          />
+          <Button
+            label="Cancel"
+            text
+            severity="secondary"
+            :disabled="deleteLoading"
+            @click="showDeleteConfirm = false"
+          />
+        </div>
       </div>
     </div>
 
@@ -290,8 +378,21 @@ function statusLabel(status: string): string {
               </span>
             </div>
 
-            <div class="view-profile-hint">
-              <i class="pi pi-external-link" /> View profile
+            <div class="member-card-footer">
+              <div class="view-profile-hint">
+                <i class="pi pi-external-link" /> View profile
+              </div>
+              <Button
+                v-if="canKick(member)"
+                icon="pi pi-user-minus"
+                severity="danger"
+                text
+                size="small"
+                class="kick-btn"
+                aria-label="Remove from team"
+                :loading="kickLoading[member.user_id]"
+                @click.stop="kickMember(member)"
+              />
             </div>
           </div>
         </div>
@@ -442,6 +543,11 @@ function statusLabel(status: string): string {
         />
       </div>
     </div>
+
+    <!-- Kick error banner -->
+    <Message v-if="kickError" severity="error" :closable="true" class="kick-error-msg" @close="kickError = null">
+      {{ kickError }}
+    </Message>
   </div>
 </template>
 
@@ -927,4 +1033,88 @@ function statusLabel(status: string): string {
 :deep(.send-invites-btn.p-button:hover) {
   background: linear-gradient(135deg, #5b21b6, #a855f7);
 }
+
+/* ── Header buttons ─────────────────────────────────────────────────────────── */
+
+.header-buttons {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+}
+
+/* ── Member card footer (profile hint + kick) ───────────────────────────────── */
+
+.member-card-footer {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  width: 100%;
+  margin-top: 0.1rem;
+}
+
+.kick-btn {
+  flex-shrink: 0;
+}
+
+/* ── Delete confirm overlay ─────────────────────────────────────────────────── */
+
+.confirm-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.65);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 200;
+  padding: 1rem;
+}
+
+.confirm-dialog {
+  background: var(--su-bg-elevated);
+  border: 1px solid var(--su-danger);
+  border-radius: 14px;
+  padding: 1.75rem;
+  max-width: 440px;
+  width: 100%;
+  box-shadow: 0 0 0 1px rgba(239, 68, 68, 0.4), 0 0 32px 8px rgba(239, 68, 68, 0.15);
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.confirm-title {
+  font-size: 1.1rem;
+  font-weight: 800;
+  color: #f87171;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.confirm-body {
+  font-size: 0.9rem;
+  color: var(--su-text-muted);
+  margin: 0;
+  line-height: 1.6;
+}
+
+.confirm-body strong {
+  color: var(--su-text);
+}
+
+.confirm-error { margin: 0; }
+
+.confirm-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+/* ── Kick error banner ──────────────────────────────────────────────────────── */
+
+.kick-error-msg { margin: 0; }
 </style>

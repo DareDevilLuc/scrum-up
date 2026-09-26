@@ -4,9 +4,11 @@ import { useRoute, useRouter } from 'vue-router'
 import Button from 'primevue/button'
 import { useAuthStore } from '@/stores/auth'
 import { useInvitationsStore } from '@/stores/invitations'
+import { useNotificationsStore } from '@/stores/notifications'
 
 const auth = useAuthStore()
 const invitations = useInvitationsStore()
+const notifications = useNotificationsStore()
 const route = useRoute()
 const router = useRouter()
 const ready = ref(false)
@@ -21,16 +23,22 @@ const showNav = computed(() =>
 onMounted(async () => {
   await auth.initialize()
   ready.value = true
-  // Load pending invitations once the user is authenticated
+  // Load pending invitations + notifications once the user is authenticated
   if (auth.user) {
     invitations.fetchPending()
+    notifications.fetchAll()
   }
 })
 
 // Re-fetch when auth user changes (e.g. sign-in after page reload)
 watch(() => auth.user, (user) => {
-  if (user) invitations.fetchPending()
-  else invitations.$reset()
+  if (user) {
+    invitations.fetchPending()
+    notifications.fetchAll()
+  } else {
+    invitations.$reset()
+    notifications.$reset()
+  }
 })
 </script>
 
@@ -44,8 +52,8 @@ watch(() => auth.user, (user) => {
         <RouterLink to="/inbox" class="nav-link nav-link--inbox">
           <i class="pi pi-inbox" style="font-size: 0.85rem" />
           Inbox
-          <span v-if="invitations.pending.length > 0" class="inbox-badge">
-            {{ invitations.pending.length }}
+          <span v-if="invitations.pending.length + notifications.unreadCount > 0" class="inbox-badge">
+            {{ invitations.pending.length + notifications.unreadCount }}
           </span>
         </RouterLink>
         <RouterLink v-if="auth.role === 'super_admin'" to="/admin" class="nav-link nav-link--admin">
