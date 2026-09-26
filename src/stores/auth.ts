@@ -10,6 +10,30 @@ export const useAuthStore = defineStore('auth', () => {
   const role = ref<string | null>(null)
   const githubToken = ref<string | null>(null)
 
+  /**
+   * Re-fetches the user's highest-priority role from user_roles and updates
+   * auth.role in place. Call this after any action that inserts a new role row
+   * for the current user (e.g. accepting a team invitation).
+   */
+  async function refreshRole() {
+    if (!user.value) return
+    const { data: rolesData } = await supabase
+      .from('user_roles')
+      .select('role')
+      .eq('user_id', user.value.id)
+
+    const rows = (rolesData ?? []).map((r: { role: string }) => r.role)
+    if (rows.includes('super_admin')) {
+      role.value = 'super_admin'
+    } else if (rows.includes('project_head')) {
+      role.value = 'project_head'
+    } else if (rows.includes('developer')) {
+      role.value = 'developer'
+    } else {
+      role.value = null
+    }
+  }
+
   // Resolves once the initial getSession() + role fetch completes.
   // Guards await this before checking auth state.
   let _resolveReady!: () => void
@@ -110,5 +134,5 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
-  return { session, user, role, githubToken, initialize, waitUntilReady, signInWithGitHub, signOut }
+  return { session, user, role, githubToken, initialize, waitUntilReady, refreshRole, signInWithGitHub, signOut }
 })

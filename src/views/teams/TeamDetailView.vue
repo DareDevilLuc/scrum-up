@@ -1,14 +1,16 @@
 <script setup lang="ts">
-import { onMounted, computed } from 'vue'
+import { onMounted, computed, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import Button from 'primevue/button'
 import Avatar from 'primevue/avatar'
 import Tag from 'primevue/tag'
 import ProgressSpinner from 'primevue/progressspinner'
 import Message from 'primevue/message'
+import InputText from 'primevue/inputtext'
 import { useTeamsStore } from '@/stores/teams'
 import type { TeamMemberProfile } from '@/stores/teams'
 import { useAuthStore } from '@/stores/auth'
+import { supabase } from '@/lib/supabase'
 
 const route = useRoute()
 const router = useRouter()
@@ -24,6 +26,151 @@ onMounted(async () => {
     teams.fetchTeamProjects(teamId.value),
   ])
 })
+
+// ── Invite panel (project_head only) ─────────────────────────────────────────
+
+const isProjectHead = computed(() => {
+  const uid = auth.user?.id
+  if (!uid) return false
+  const member = teams.currentMembers.find((m) => m.user_id === uid)
+  return member?.role === 'project_head' || auth.role === 'super_admin'
+})
+
+interface UserResult {
+  id: string
+  display_name: string | null
+  avatar_url: string | null
+  github_username: string | null
+}
+
+interface PendingInvite {
+  user: UserResult
+  role: 'project_head' | 'developer'
+}
+
+const inviteSearchQuery = ref('')
+const inviteSearchResults = ref<UserResult[]>([])
+const inviteSearchLoading = ref(false)
+const pendingInvites = ref<PendingInvite[]>([])
+const inviteSubmitting = ref(false)
+const inviteSuccess = ref(false)
+const inviteError = ref<string | null>(null)
+
+const invitedIds = computed(() => {
+  const memberIds = teams.currentMembers.map((m) => m.user_id)
+  const pendingIds = pendingInvites.value.map((i) => i.user.id)
+  return [...memberIds, ...pendingIds]
+})
+
+async function searchInviteUsers() {
+  const q = inviteSearchQuery.value.trim()
+  if (q.length < 2) { inviteSearchResults.value = []; return }
+  inviteSearchLoading.value = true
+  try {
+    const { data } = await supabase
+      .from('users')
+      .select('id, display_name, avatar_url, github_username')
+      .or(`display_name.ilike.%${q}%,github_username.ilike.%${q}%`)
+      .neq('id', auth.user!.id)
+      .limit(8)
+    inviteSearchResults.value = (data ?? []).filter(
+      (u: UserResult) => !invitedIds.value.includes(u.id),
+    )
+  } finally {
+    inviteSearchLoading.value = false
+  }
+}
+
+function addPendingInvite(user: UserResult) {
+  if (invitedIds.value.includes(user.id)) return
+  pendingInvites.value.push({ user, role: 'developer' })
+  inviteSearchQuery.value = ''
+  inviteSearchResults.value = []
+}
+
+function removePendingInvite(userId: string) {
+  pendingInvites.value = pendingInvites.value.filter((i) => i.user.id !== userId)
+}
+
+function toggleInviteRole(inv: PendingInvite) {
+  inv.role = inv.role === 'developer' ? 'project_head' : 'developer'
+}
+
+async function sendInvites() {
+  if (pendingInvites.value.length === 0) return
+  inviteSubmitting.value = true
+  inviteError.value = null
+  inviteSuccess.value = false
+  try {
+    const { error: sbError } = await supabase.from('team_invitations').insert(
+      pendingInvites.value.map((inv) => ({
+        team_id: teamId.value,
+        invited_by: auth.user!.id,
+        invited_user: inv.user.id,
+        role: inv.role,
+        status: 'pending',
+      })),
+    )
+    if (sbError) throw sbError
+    pendingInvites.value = []
+    inviteSuccess.value = true
+    setTimeout(() => { inviteSuccess.value = false }, 3000)
+  } catch (e) {
+    inviteError.value = (e as Error).message
+  } finally {
+    inviteSubmitting.value = false
+  }
+}
+
+function inviteInitials(name: string | null): string {
+  if (!name) return '?'
+  return name.split(' ').slice(0, 2).map((n) => n[0]?.toUpperCase() ?? '').join('')
+}
+
+// ── Kick member ───────────────────────────────────────────────────────────────
+
+const kickLoading = ref<Record<string, boolean>>({})
+const kickError = ref<string | null>(null)
+
+// A project_head can kick developers only (not other project_heads or super_admins)
+function canKick(member: TeamMemberProfile): boolean {
+  if (!isProjectHead.value) return false
+  if (member.user_id === auth.user?.id) return false           // can't kick self
+  if (member.role === 'project_head') return false             // can't kick another head
+  if (member.role === 'super_admin') return false              // can't kick super admin
+  return true
+}
+
+async function kickMember(member: TeamMemberProfile) {
+  kickError.value = null
+  kickLoading.value[member.user_id] = true
+  try {
+    await teams.kickMember(teamId.value, member.user_id)
+  } catch (e) {
+    kickError.value = (e as Error).message
+  } finally {
+    kickLoading.value[member.user_id] = false
+  }
+}
+
+// ── Delete team ───────────────────────────────────────────────────────────────
+
+const showDeleteConfirm = ref(false)
+const deleteLoading = ref(false)
+const deleteError = ref<string | null>(null)
+
+async function confirmDeleteTeam() {
+  deleteLoading.value = true
+  deleteError.value = null
+  try {
+    await teams.deleteTeam(teamId.value)
+    router.push({ name: 'teams' })
+  } catch (e) {
+    deleteError.value = (e as Error).message
+    deleteLoading.value = false
+    showDeleteConfirm.value = false
+  }
+}
 
 function initials(name: string | null): string {
   if (!name) return '?'
@@ -96,13 +243,56 @@ function statusLabel(status: string): string {
           </h1>
           <p class="page-subtitle">{{ teams.currentMembers.length }} member{{ teams.currentMembers.length !== 1 ? 's' : '' }}</p>
         </div>
-        <Button
-          v-if="auth.role === 'super_admin'"
-          label="Manage in Admin"
-          icon="pi pi-cog"
-          text
-          @click="router.push({ name: 'admin-teams' })"
-        />
+        <div class="header-buttons">
+          <Button
+            v-if="auth.role === 'super_admin'"
+            label="Manage in Admin"
+            icon="pi pi-cog"
+            text
+            @click="router.push({ name: 'admin-teams' })"
+          />
+          <Button
+            v-if="isProjectHead"
+            label="Delete Team"
+            icon="pi pi-trash"
+            severity="danger"
+            text
+            size="small"
+            @click="showDeleteConfirm = true"
+          />
+        </div>
+      </div>
+    </div>
+
+    <!-- Delete confirmation -->
+    <div v-if="showDeleteConfirm" class="confirm-overlay" @click.self="showDeleteConfirm = false">
+      <div class="confirm-dialog">
+        <h3 class="confirm-title">
+          <i class="pi pi-exclamation-triangle" /> Delete Team?
+        </h3>
+        <p class="confirm-body">
+          This will permanently delete <strong>{{ teams.currentTeam?.name }}</strong> and notify all members.
+          This cannot be undone.
+        </p>
+        <Message v-if="deleteError" severity="error" :closable="false" class="confirm-error">
+          {{ deleteError }}
+        </Message>
+        <div class="confirm-actions">
+          <Button
+            label="Delete permanently"
+            icon="pi pi-trash"
+            severity="danger"
+            :loading="deleteLoading"
+            @click="confirmDeleteTeam"
+          />
+          <Button
+            label="Cancel"
+            text
+            severity="secondary"
+            :disabled="deleteLoading"
+            @click="showDeleteConfirm = false"
+          />
+        </div>
       </div>
     </div>
 
@@ -188,8 +378,21 @@ function statusLabel(status: string): string {
               </span>
             </div>
 
-            <div class="view-profile-hint">
-              <i class="pi pi-external-link" /> View profile
+            <div class="member-card-footer">
+              <div class="view-profile-hint">
+                <i class="pi pi-external-link" /> View profile
+              </div>
+              <Button
+                v-if="canKick(member)"
+                icon="pi pi-user-minus"
+                severity="danger"
+                text
+                size="small"
+                class="kick-btn"
+                aria-label="Remove from team"
+                :loading="kickLoading[member.user_id]"
+                @click.stop="kickMember(member)"
+              />
             </div>
           </div>
         </div>
@@ -229,6 +432,122 @@ function statusLabel(status: string): string {
         </div>
       </div>
     </div>
+
+    <!-- ── Invite Members panel (project_head / super_admin only) ─────────── -->
+    <div v-if="isProjectHead" class="invite-section">
+      <div class="role-header">
+        <i class="pi pi-user-plus role-icon" />
+        <span class="role-label">Invite Members</span>
+      </div>
+
+      <!-- Search -->
+      <div class="invite-search-wrap">
+        <InputText
+          v-model="inviteSearchQuery"
+          placeholder="Search by name or GitHub username…"
+          class="invite-search-input"
+          :disabled="inviteSubmitting"
+          @input="searchInviteUsers"
+        />
+        <div v-if="inviteSearchLoading" class="invite-spinner">
+          <i class="pi pi-spinner pi-spin" />
+        </div>
+      </div>
+
+      <!-- Results dropdown -->
+      <div v-if="inviteSearchResults.length > 0" class="invite-results">
+        <div
+          v-for="u in inviteSearchResults"
+          :key="u.id"
+          class="invite-result-row"
+          @click="addPendingInvite(u)"
+        >
+          <Avatar
+            v-if="u.avatar_url"
+            :image="u.avatar_url"
+            shape="circle"
+            size="small"
+          />
+          <Avatar
+            v-else
+            :label="inviteInitials(u.display_name)"
+            shape="circle"
+            size="small"
+            class="avatar-fallback"
+          />
+          <span class="ir-name">{{ u.display_name ?? u.github_username ?? 'Unknown' }}</span>
+          <span v-if="u.github_username" class="ir-github">@{{ u.github_username }}</span>
+          <i class="pi pi-plus ir-add" />
+        </div>
+      </div>
+
+      <!-- Pending invite list -->
+      <div v-if="pendingInvites.length > 0" class="invite-pending-list">
+        <div v-for="inv in pendingInvites" :key="inv.user.id" class="invite-pending-row">
+          <Avatar
+            v-if="inv.user.avatar_url"
+            :image="inv.user.avatar_url"
+            shape="circle"
+            size="small"
+          />
+          <Avatar
+            v-else
+            :label="inviteInitials(inv.user.display_name)"
+            shape="circle"
+            size="small"
+            class="avatar-fallback"
+          />
+          <span class="ip-name">{{ inv.user.display_name ?? inv.user.github_username ?? 'Unknown' }}</span>
+          <button
+            class="role-toggle"
+            :class="`role-toggle--${inv.role}`"
+            @click="toggleInviteRole(inv)"
+          >
+            {{ inv.role === 'project_head' ? 'Project Head' : 'Developer' }}
+            <i class="pi pi-refresh" />
+          </button>
+          <Button
+            icon="pi pi-times"
+            text
+            severity="danger"
+            size="small"
+            @click="removePendingInvite(inv.user.id)"
+          />
+        </div>
+      </div>
+
+      <!-- Feedback messages -->
+      <Message v-if="inviteSuccess" severity="success" :closable="false" class="invite-msg">
+        Invitations sent! Members will see them in their Inbox.
+      </Message>
+      <Message v-if="inviteError" severity="error" :closable="false" class="invite-msg">
+        {{ inviteError }}
+      </Message>
+
+      <!-- Send button -->
+      <div v-if="pendingInvites.length > 0" class="invite-actions">
+        <Button
+          label="Send Invitations"
+          icon="pi pi-send"
+          :loading="inviteSubmitting"
+          :disabled="inviteSubmitting"
+          class="send-invites-btn"
+          @click="sendInvites"
+        />
+        <Button
+          label="Clear"
+          text
+          severity="secondary"
+          :disabled="inviteSubmitting"
+          @click="pendingInvites = []"
+        />
+      </div>
+    </div>
+
+    <!-- Kick error banner -->
+    <Message v-if="kickError" severity="error" :closable="true" class="kick-error-msg" @close="kickError = null">
+      {{ kickError }}
+    </Message>
   </div>
 </template>
 
@@ -558,4 +877,244 @@ function statusLabel(status: string): string {
   border-radius: 999px;
   padding: 0.12rem 0.5rem;
 }
+
+/* ── Invite section ─────────────────────────────────────────────────────────── */
+
+.invite-section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.invite-search-wrap {
+  position: relative;
+}
+
+.invite-search-input {
+  width: 100%;
+}
+
+:deep(.invite-search-input.p-inputtext) {
+  background: var(--su-bg-elevated);
+  border-color: var(--su-border);
+  color: var(--su-text);
+}
+
+:deep(.invite-search-input.p-inputtext:focus) {
+  border-color: var(--su-border-glow);
+  box-shadow: 0 0 0 2px rgba(124, 58, 237, 0.3);
+}
+
+.invite-spinner {
+  position: absolute;
+  right: 0.75rem;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--su-text-muted);
+  font-size: 0.85rem;
+}
+
+.invite-results {
+  background: var(--su-bg-elevated);
+  border: 1px solid var(--su-border);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.invite-result-row {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.55rem 0.8rem;
+  cursor: pointer;
+  transition: background 0.1s;
+}
+
+.invite-result-row:hover {
+  background: rgba(124, 58, 237, 0.12);
+}
+
+.ir-name {
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--su-text);
+}
+
+.ir-github {
+  font-size: 0.78rem;
+  color: var(--su-text-muted);
+  flex: 1;
+}
+
+.ir-add {
+  font-size: 0.8rem;
+  color: var(--su-purple-300);
+  margin-left: auto;
+}
+
+.invite-pending-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.invite-pending-row {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  background: var(--su-bg-elevated);
+  border: 1px solid var(--su-border);
+  border-radius: 8px;
+  padding: 0.5rem 0.75rem;
+}
+
+.ip-name {
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--su-text);
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.role-toggle {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  border-radius: 999px;
+  padding: 0.15rem 0.55rem;
+  cursor: pointer;
+  border: 1px solid transparent;
+  background: transparent;
+  transition: background 0.1s, border-color 0.1s;
+  white-space: nowrap;
+}
+
+.role-toggle--developer {
+  color: var(--su-purple-300);
+  border-color: rgba(124, 58, 237, 0.35);
+  background: rgba(124, 58, 237, 0.1);
+}
+
+.role-toggle--developer:hover {
+  background: rgba(124, 58, 237, 0.22);
+}
+
+.role-toggle--project_head {
+  color: #fbbf24;
+  border-color: rgba(251, 191, 36, 0.35);
+  background: rgba(251, 191, 36, 0.1);
+}
+
+.role-toggle--project_head:hover {
+  background: rgba(251, 191, 36, 0.22);
+}
+
+.invite-msg { margin: 0; }
+
+.invite-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+:deep(.send-invites-btn.p-button) {
+  background: linear-gradient(135deg, #4c1d95, #7c3aed);
+  border-color: var(--su-border-glow);
+  color: var(--su-purple-200);
+}
+
+:deep(.send-invites-btn.p-button:hover) {
+  background: linear-gradient(135deg, #5b21b6, #a855f7);
+}
+
+/* ── Header buttons ─────────────────────────────────────────────────────────── */
+
+.header-buttons {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+}
+
+/* ── Member card footer (profile hint + kick) ───────────────────────────────── */
+
+.member-card-footer {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  width: 100%;
+  margin-top: 0.1rem;
+}
+
+.kick-btn {
+  flex-shrink: 0;
+}
+
+/* ── Delete confirm overlay ─────────────────────────────────────────────────── */
+
+.confirm-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.65);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 200;
+  padding: 1rem;
+}
+
+.confirm-dialog {
+  background: var(--su-bg-elevated);
+  border: 1px solid var(--su-danger);
+  border-radius: 14px;
+  padding: 1.75rem;
+  max-width: 440px;
+  width: 100%;
+  box-shadow: 0 0 0 1px rgba(239, 68, 68, 0.4), 0 0 32px 8px rgba(239, 68, 68, 0.15);
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.confirm-title {
+  font-size: 1.1rem;
+  font-weight: 800;
+  color: #f87171;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.confirm-body {
+  font-size: 0.9rem;
+  color: var(--su-text-muted);
+  margin: 0;
+  line-height: 1.6;
+}
+
+.confirm-body strong {
+  color: var(--su-text);
+}
+
+.confirm-error { margin: 0; }
+
+.confirm-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+/* ── Kick error banner ──────────────────────────────────────────────────────── */
+
+.kick-error-msg { margin: 0; }
 </style>
