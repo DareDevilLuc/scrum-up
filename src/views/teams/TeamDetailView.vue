@@ -19,7 +19,10 @@ const teamId = computed(() => route.params.id as string)
 
 onMounted(async () => {
   await teams.fetchTeamDetail(teamId.value)
-  await teams.fetchTeamMembers(teamId.value)
+  await Promise.all([
+    teams.fetchTeamMembers(teamId.value),
+    teams.fetchTeamProjects(teamId.value),
+  ])
 })
 
 function initials(name: string | null): string {
@@ -53,6 +56,25 @@ const roleGroups = computed<RoleGroup[]>(() =>
     { label: 'Developers', icon: 'pi pi-code', members: developers.value, tagClass: 'tag--dev', tagLabel: 'Developer' },
   ].filter((g) => g.members.length > 0),
 )
+// Build a map: user_id → display_name (for showing project head name)
+const memberNameMap = computed(() => {
+  const map: Record<string, string> = {}
+  for (const m of teams.currentMembers) {
+    map[m.user_id] = m.display_name ?? m.github_username ?? 'Unknown'
+  }
+  return map
+})
+
+function statusClass(status: string): string {
+  if (status === 'active') return 'status--active'
+  if (status === 'completed') return 'status--done'
+  if (status === 'on_hold') return 'status--hold'
+  return 'status--planning'
+}
+
+function statusLabel(status: string): string {
+  return status.replace('_', ' ')
+}
 </script>
 
 <template>
@@ -173,6 +195,40 @@ const roleGroups = computed<RoleGroup[]>(() =>
         </div>
       </div>
     </template>
+
+    <!-- Projects panel -->
+    <div v-if="teams.currentTeamProjects.length > 0" class="projects-section">
+      <div class="role-header">
+        <i class="pi pi-folder role-icon" />
+        <span class="role-label">Projects</span>
+        <span class="role-count">{{ teams.currentTeamProjects.length }}</span>
+      </div>
+      <div class="projects-grid">
+        <div
+          v-for="proj in teams.currentTeamProjects"
+          :key="proj.id"
+          class="project-card"
+          @click="router.push({ name: 'project-detail', params: { id: proj.id } })"
+        >
+          <div class="project-card-header">
+            <span class="project-name">{{ proj.name }}</span>
+            <span class="project-status" :class="statusClass(proj.status)">
+              {{ statusLabel(proj.status) }}
+            </span>
+          </div>
+          <div class="project-meta">
+            <span v-if="proj.created_by" class="project-head-chip">
+              <i class="pi pi-star" />
+              {{ memberNameMap[proj.created_by] ?? 'Unknown' }}
+            </span>
+            <span v-if="proj.start_date" class="meta-chip">
+              <i class="pi pi-calendar" />
+              {{ new Date(proj.start_date).toLocaleDateString(undefined, { month: 'short', year: 'numeric' }) }}
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -411,5 +467,95 @@ const roleGroups = computed<RoleGroup[]>(() =>
   align-items: center;
   gap: 0.3rem;
   margin-top: 0.15rem;
+}
+
+/* ── Projects section ───────────────────────────────────────────────────────── */
+
+.projects-section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.projects-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 0.75rem;
+}
+
+.project-card {
+  background: var(--su-bg-surface);
+  border: 1px solid var(--su-border);
+  border-radius: 10px;
+  padding: 0.9rem 1rem;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  box-shadow: 0 0 0 1px var(--su-border), 0 0 10px 2px rgba(124, 58, 237, 0.08);
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.project-card:hover {
+  border-color: var(--su-border-glow);
+  box-shadow: 0 0 0 1px var(--su-border-glow), 0 0 14px 4px rgba(124, 58, 237, 0.3);
+}
+
+.project-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.project-name {
+  font-size: 0.92rem;
+  font-weight: 700;
+  color: var(--su-text);
+}
+
+.project-status {
+  font-size: 0.65rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  border-radius: 999px;
+  padding: 0.1rem 0.5rem;
+}
+
+.status--active  { background: rgba(34, 197, 94, 0.15); color: #4ade80; border: 1px solid rgba(34, 197, 94, 0.3); }
+.status--done    { background: rgba(124, 58, 237, 0.15); color: var(--su-purple-300); border: 1px solid rgba(124, 58, 237, 0.3); }
+.status--hold    { background: rgba(245, 158, 11, 0.15); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.3); }
+.status--planning { background: rgba(139, 122, 171, 0.15); color: var(--su-text-muted); border: 1px solid rgba(139, 122, 171, 0.3); }
+
+.project-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.meta-chip {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-size: 0.72rem;
+  color: var(--su-text-muted);
+  background: rgba(124, 58, 237, 0.08);
+  border: 1px solid rgba(124, 58, 237, 0.15);
+  border-radius: 999px;
+  padding: 0.12rem 0.5rem;
+}
+
+.project-head-chip {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: #fbbf24;
+  background: rgba(251, 191, 36, 0.1);
+  border: 1px solid rgba(251, 191, 36, 0.25);
+  border-radius: 999px;
+  padding: 0.12rem 0.5rem;
 }
 </style>

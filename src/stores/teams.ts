@@ -31,11 +31,21 @@ export interface TeamMemberProfile {
 
 // ── Store ─────────────────────────────────────────────────────────────────────
 
+export interface TeamProject {
+  id: string
+  name: string
+  status: string
+  created_by: string | null
+  start_date: string | null
+  end_date: string | null
+}
+
 export const useTeamsStore = defineStore('teams', () => {
   // ── State ──────────────────────────────────────────────────────────────────
   const myTeams = ref<MyTeam[]>([])
   const currentTeam = ref<TeamDetail | null>(null)
   const currentMembers = ref<TeamMemberProfile[]>([])
+  const currentTeamProjects = ref<TeamProject[]>([])
   const loading = ref(false)
   const error = ref<string | null>(null)
 
@@ -204,11 +214,29 @@ export const useTeamsStore = defineStore('teams', () => {
     }
   }
 
+  /** Fetch all projects associated with a team, ordered by most recent. */
+  async function fetchTeamProjects(teamId: string) {
+    try {
+      const { data, error: sbError } = await supabase
+        .from('projects')
+        .select('id, name, status, created_by, start_date, end_date')
+        .eq('team_id', teamId)
+        .order('created_at', { ascending: false })
+
+      if (sbError) throw sbError
+      currentTeamProjects.value = data ?? []
+    } catch (e) {
+      console.warn('[teams] fetchTeamProjects failed:', (e as Error).message)
+      currentTeamProjects.value = []
+    }
+  }
+
   // ── Reset ──────────────────────────────────────────────────────────────────
   function $reset() {
     myTeams.value = []
     currentTeam.value = null
     currentMembers.value = []
+    currentTeamProjects.value = []
     loading.value = false
     error.value = null
   }
@@ -217,11 +245,13 @@ export const useTeamsStore = defineStore('teams', () => {
     myTeams,
     currentTeam,
     currentMembers,
+    currentTeamProjects,
     loading,
     error,
     fetchMyTeams,
     fetchTeamDetail,
     fetchTeamMembers,
+    fetchTeamProjects,
     $reset,
   }
 })

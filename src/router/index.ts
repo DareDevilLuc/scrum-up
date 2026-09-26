@@ -65,6 +65,12 @@ const routes: RouteRecordRaw[] = [
     beforeEnter: requireAuth,
   },
   {
+    path: '/teams/new',
+    name: 'team-new',
+    component: () => import('../views/teams/CreateTeamView.vue'),
+    beforeEnter: requireAuth,
+  },
+  {
     path: '/teams/:id',
     name: 'team-detail',
     component: () => import('../views/teams/TeamDetailView.vue'),
@@ -80,7 +86,7 @@ const routes: RouteRecordRaw[] = [
     path: '/projects/new',
     name: 'project-new',
     component: () => import('../views/projects/CreateProjectView.vue'),
-    beforeEnter: requireRole(['project_head', 'super_admin']),
+    beforeEnter: requireAuth,
   },
   {
     path: '/projects/:id',
