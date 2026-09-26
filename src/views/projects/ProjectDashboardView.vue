@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, watch, computed } from 'vue'
+import { onMounted, watch, computed, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import Button from 'primevue/button'
 import Tag from 'primevue/tag'
@@ -10,6 +10,8 @@ import { useDashboardStore } from '@/stores/dashboard'
 import { useAuthStore } from '@/stores/auth'
 import type { Sprint } from '@/stores/dashboard'
 import MetricCard from '@/components/MetricCard.vue'
+import LinkRepoDialog from '@/components/LinkRepoDialog.vue'
+import GitHubActivityFeed from '@/components/GitHubActivityFeed.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -24,6 +26,8 @@ const isProjectHead = computed(
 
 // onMounted fires on every entry (including back-navigation) because the view
 // is not wrapped in <KeepAlive>, so this naturally re-fetches after sprint confirmation.
+const linkRepoVisible = ref(false)
+
 onMounted(() => dashboard.fetchProjectOverview(projectId.value))
 
 // Also reload when navigating between different projects without unmounting
@@ -33,6 +37,11 @@ watch(projectId, (newId) => dashboard.fetchProjectOverview(newId))
 
 function selectSprint(sprint: Sprint) {
   dashboard.selectSprint(sprint)
+}
+
+function onRepoLinked(_repoFullName: string, _repoUrl: string) {
+  // Refresh the overview so linkedRepo state is up-to-date
+  dashboard.fetchProjectOverview(projectId.value)
 }
 
 function statusSeverity(status: string): string {
@@ -260,22 +269,41 @@ function initials(name: string): string {
             Select a sprint to see metrics.
           </div>
 
-          <!-- GitHub repo badge (wired in Sub-Task 11) -->
+          <!-- GitHub repository card -->
           <div class="section-card github-card">
-            <h2 class="section-heading">GitHub Repository</h2>
-            <div class="github-placeholder">
-              <i class="pi pi-github github-icon" />
-              <span class="github-text">No repository linked yet.</span>
+            <div class="section-heading-row">
+              <h2 class="section-heading">GitHub Repository</h2>
               <Button
-                label="Link Repository"
+                v-if="isProjectHead"
+                :label="dashboard.linkedRepo ? 'Change Repo' : 'Link Repository'"
                 icon="pi pi-link"
                 text
                 size="small"
-                class="link-repo-btn"
-                disabled
+                @click="linkRepoVisible = true"
               />
             </div>
+
+            <!-- No repo linked yet -->
+            <div v-if="!dashboard.linkedRepo" class="github-placeholder">
+              <i class="pi pi-github github-icon" />
+              <span class="github-text">No repository linked yet.</span>
+            </div>
+
+            <!-- Activity feed -->
+            <GitHubActivityFeed
+              v-else
+              :project-id="projectId"
+              :sprint-id="dashboard.currentSprint?.id ?? null"
+              :repo-full-name="dashboard.linkedRepo.repo_full_name"
+            />
           </div>
+
+          <!-- Link Repo Dialog -->
+          <LinkRepoDialog
+            v-model:visible="linkRepoVisible"
+            :project-id="projectId"
+            @linked="onRepoLinked"
+          />
 
           <!-- AI Sprint Planner tile (project head only) -->
           <div
