@@ -155,6 +155,20 @@ watch(selectedSprintId, async (newId) => {
             class="sprint-select"
           />
 
+          <!-- Review / Retro links -->
+          <Button
+            label="Review"
+            icon="pi pi-chart-bar"
+            text
+            @click="router.push({ name: 'sprint-review', params: { id: projectId, sprintId } })"
+          />
+          <Button
+            label="Retro"
+            icon="pi pi-comments"
+            text
+            @click="router.push({ name: 'sprint-retro', params: { id: projectId, sprintId } })"
+          />
+
           <!-- Add task button (project head only) -->
           <Button
             v-if="isProjectHead"
