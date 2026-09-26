@@ -59,6 +59,18 @@ const routes: RouteRecordRaw[] = [
     ],
   },
   {
+    path: '/teams',
+    name: 'teams',
+    component: () => import('../views/teams/TeamsListView.vue'),
+    beforeEnter: requireAuth,
+  },
+  {
+    path: '/teams/:id',
+    name: 'team-detail',
+    component: () => import('../views/teams/TeamDetailView.vue'),
+    beforeEnter: requireAuth,
+  },
+  {
     path: '/projects/:id',
     name: 'project',
     component: () => import('../views/ProjectView.vue'),
