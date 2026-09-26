@@ -9,7 +9,6 @@ import { supabase } from '@/lib/supabase'
 
 const props = defineProps<{
   projectId: string
-  isProjectHead: boolean
 }>()
 
 // ── State ─────────────────────────────────────────────────────────────────────
@@ -74,7 +73,6 @@ async function generate() {
         AI Project Summary
       </span>
       <Button
-        v-if="isProjectHead"
         :label="summary ? 'Regenerate' : 'Generate Summary'"
         icon="pi pi-refresh"
         size="small"
@@ -101,12 +99,7 @@ async function generate() {
     <div v-else class="empty-state">
       <i class="pi pi-file-edit empty-icon" />
       <p class="empty-text">
-        <template v-if="isProjectHead">
-          No project summary yet. Click <strong>Generate Summary</strong> to create one with AI.
-        </template>
-        <template v-else>
-          No AI project summary has been generated yet.
-        </template>
+        No project summary yet. Click <strong>Generate Summary</strong> to create one with AI.
       </p>
     </div>
   </div>
