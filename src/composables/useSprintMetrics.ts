@@ -7,7 +7,7 @@ export interface SprintTask {
   id: string
   status: string
   story_points: number | null
-  updated_at: string
+  created_at: string
 }
 
 export interface BurndownPoint {
@@ -61,7 +61,7 @@ export function useSprintMetrics(sprintIdRef: { value: string | null }) {
       // 2. All tasks in sprint
       const { data: taskRows, error: taskErr } = await supabase
         .from('tasks')
-        .select('id, status, story_points, updated_at')
+        .select('id, status, story_points, created_at')
         .eq('sprint_id', sprintId)
 
       if (taskErr) throw taskErr
@@ -148,8 +148,8 @@ function computeBurndown(
     const remaining = tasks.reduce((sum, t) => {
       const pts = t.story_points ?? 1
       if (t.status !== 'done') return sum + pts
-      // Task is done — was it done BY this day?
-      const completedAt = new Date(t.updated_at)
+      // Task is done — use created_at as completion date proxy
+      const completedAt = new Date((t as any).created_at ?? dayStr)
       return completedAt <= dayEnd ? sum : sum + pts
     }, 0)
 

@@ -36,14 +36,21 @@ const isProjectHead = computed(
 // is not wrapped in <KeepAlive>, so this naturally re-fetches after sprint confirmation.
 const linkRepoVisible = ref(false)
 
-onMounted(() => dashboard.fetchProjectOverview(projectId.value))
-
-// Also reload when navigating between different projects without unmounting
-watch(projectId, (newId) => dashboard.fetchProjectOverview(newId))
-
 // ── Sprint metrics (reactive to currentSprint) ────────────────────────────────
 const currentSprintId = computed(() => dashboard.currentSprint?.id ?? null)
 const metrics = useSprintMetrics(currentSprintId)
+
+onMounted(async () => {
+  await dashboard.fetchProjectOverview(projectId.value)
+  // Re-fetch metrics after the overview loads so the active sprint's data is current
+  if (currentSprintId.value) metrics.fetchMetrics(currentSprintId.value)
+})
+
+// Also reload when navigating between different projects without unmounting
+watch(projectId, async (newId) => {
+  await dashboard.fetchProjectOverview(newId)
+  if (currentSprintId.value) metrics.fetchMetrics(currentSprintId.value)
+})
 
 // ── Velocity: story points completed per sprint (all sprints in project) ───────
 const velocityData = computed<VelocityPoint[]>(() =>
