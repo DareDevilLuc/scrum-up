@@ -27,8 +27,7 @@ const routes: RouteRecordRaw[] = [
   {
     path: '/',
     name: 'home',
-    component: () => import('../views/HomeView.vue'),
-    beforeEnter: requireAuth,
+    redirect: { name: 'dashboard' },
   },
   {
     path: '/dashboard',
