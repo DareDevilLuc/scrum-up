@@ -375,7 +375,7 @@ Build the project creation form that is only accessible to users with the `proje
 
 ## Sub-Task 8 — AI Sprint Planner
 
-**Status:** `[ ] pending`
+**Status:** `[x] complete`
 
 **Intent:**
 Create the AI-powered sprint planning feature. Given the project requirements, timeline, and team member profiles, GPT-4o returns a prioritized breakdown of sprints, each with suggested tasks and recommended developer assignments. The project head can review and edit these suggestions before committing them to the database.
@@ -390,8 +390,8 @@ Create the AI-powered sprint planning feature. Given the project requirements, t
 **Todo List:**
 1. Create Supabase Edge Function `supabase/functions/generate-sprint-plan/index.ts`:
    - Input: `{ project_id, requirements, start_date, end_date, team_members: [{ user_id, display_name, tech_stack, languages, experience_years }] }`
-   - Build a GPT-4o prompt that instructs the model to return JSON: `{ sprints: [{ name, goal, start_date, end_date, tasks: [{ title, description, priority, story_points, suggested_assignee_user_id }] }] }`
-   - Use structured output / JSON mode in the OpenAI API call
+   - Build a prompt that instructs the model to return JSON: `{ sprints: [{ name, goal, start_date, end_date, tasks: [{ title, description, priority, story_points, suggested_assignee_user_id }] }] }`
+   - Use `response_format: { type: 'json_object' }` (Groq supports this on `llama-3.3-70b-versatile`)
    - Return the parsed JSON to the caller
 2. Create `src/views/projects/SprintPlannerView.vue`:
    - "Generate Plan" button with loading state
@@ -406,8 +406,9 @@ Create the AI-powered sprint planning feature. Given the project requirements, t
 **Relevant Context:**
 - `sprints`, `tasks`, `task_assignments` tables from Sub-Task 3
 - `developer_profiles.tech_stack` and `developer_profiles.languages` from Sub-Task 5 are the key inputs for matching
-- OpenAI API key must be set as a Supabase Edge Function secret (`supabase secrets set OPENAI_API_KEY=...`), not in the frontend `.env`
-- Use OpenAI `response_format: { type: 'json_object' }` to guarantee parseable output
+- **Using Groq (free tier)** instead of OpenAI — set secret: `supabase secrets set GROQ_API_KEY=...`
+- Model: `llama3-70b-8192` via `https://api.groq.com/openai/v1` (OpenAI-compatible)
+- Use `response_format: { type: 'json_object' }` to guarantee parseable output
 
 ---
 
@@ -662,7 +663,7 @@ Build dedicated pages for sprint reviews and retrospectives. The review page is 
 |---|---|---|
 | `VITE_SUPABASE_URL` | Frontend `.env` | Supabase project URL |
 | `VITE_SUPABASE_ANON_KEY` | Frontend `.env` | Supabase anon/public key |
-| `OPENAI_API_KEY` | Supabase Edge Function Secret | GPT-4o API access |
+| `GROQ_API_KEY` | Supabase Edge Function Secret | Groq Llama 3.3 70B API access (AI sprint planner) |
 | `GITHUB_CLIENT_ID` | Supabase Auth dashboard | GitHub OAuth App client ID |
 | `GITHUB_CLIENT_SECRET` | Supabase Auth dashboard | GitHub OAuth App secret |
 
@@ -679,6 +680,6 @@ Build dedicated pages for sprint reviews and retrospectives. The review page is 
 | Backend / DB | Supabase (PostgreSQL + RLS) |
 | Auth | Supabase Auth + GitHub OAuth |
 | Serverless Functions | Supabase Edge Functions (Deno/TypeScript) |
-| AI | OpenAI GPT-4o via REST API |
+| AI | Groq `llama3-70b-8192` via OpenAI-compatible REST API |
 | GitHub Integration | GitHub REST API v3 |
 | Deployment | Vercel (frontend) + Supabase Cloud (backend) |

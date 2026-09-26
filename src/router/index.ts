@@ -88,6 +88,12 @@ const routes: RouteRecordRaw[] = [
     component: () => import('../views/ProjectView.vue'),
     beforeEnter: requireAuth,
   },
+  {
+    path: '/projects/:id/plan-sprint',
+    name: 'sprint-planner',
+    component: () => import('../views/projects/SprintPlannerView.vue'),
+    beforeEnter: requireRole(['project_head', 'super_admin']),
+  },
 
   // ── Profiles ──────────────────────────────────────────────────────────────
   {
