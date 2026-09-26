@@ -12,6 +12,12 @@ import type { Sprint } from '@/stores/dashboard'
 import MetricCard from '@/components/MetricCard.vue'
 import LinkRepoDialog from '@/components/LinkRepoDialog.vue'
 import GitHubActivityFeed from '@/components/GitHubActivityFeed.vue'
+import BurndownChart from '@/components/charts/BurndownChart.vue'
+import VelocityChart from '@/components/charts/VelocityChart.vue'
+import SprintCompletionRing from '@/components/charts/SprintCompletionRing.vue'
+import CommitFrequencyChart from '@/components/charts/CommitFrequencyChart.vue'
+import { useSprintMetrics } from '@/composables/useSprintMetrics'
+import type { VelocityPoint } from '@/components/charts/VelocityChart.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -32,6 +38,23 @@ onMounted(() => dashboard.fetchProjectOverview(projectId.value))
 
 // Also reload when navigating between different projects without unmounting
 watch(projectId, (newId) => dashboard.fetchProjectOverview(newId))
+
+// ── Sprint metrics (reactive to currentSprint) ────────────────────────────────
+const currentSprintId = computed(() => dashboard.currentSprint?.id ?? null)
+const metrics = useSprintMetrics(currentSprintId)
+
+// ── Velocity: story points completed per sprint (all sprints in project) ───────
+const velocityData = computed<VelocityPoint[]>(() =>
+  dashboard.sprints.map((s) => ({
+    sprintName: s.name,
+    storyPoints: s.completed_story_points ?? 0,
+  }))
+)
+
+// Total story points in current sprint (for ideal burndown line)
+const totalSprintPoints = computed(() =>
+  metrics.tasks.value.reduce((sum, t) => sum + (t.story_points ?? 1), 0)
+)
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -234,32 +257,47 @@ function initials(name: string): string {
           <template v-if="dashboard.currentSprint">
             <div class="metrics-header">
               <span class="metrics-label">Metrics — {{ dashboard.currentSprint.name }}</span>
+              <ProgressSpinner v-if="metrics.loading.value" style="width:18px;height:18px" />
             </div>
             <div class="metrics-grid">
-              <MetricCard
-                title="Total Tasks"
-                :value="dashboard.currentSprint.task_count"
-                icon="pi-list"
-                subtitle="Tasks in this sprint"
-              />
-              <MetricCard
-                title="Completed"
-                :value="dashboard.currentSprint.completed_task_count"
-                icon="pi-check-circle"
-                subtitle="Done tasks"
-              />
+              <!-- Sprint Completion Ring -->
               <MetricCard
                 title="Completion"
-                :value="completionPercent(dashboard.currentSprint) + '%'"
+                :value="metrics.completionCounts.value.percent + '%'"
                 icon="pi-chart-pie"
-                subtitle="Progress toward goal"
-              />
+                subtitle="Done / In Progress / To Do"
+              >
+                <SprintCompletionRing :counts="metrics.completionCounts.value" />
+              </MetricCard>
+
+              <!-- Burndown Chart -->
               <MetricCard
-                title="Remaining"
-                :value="dashboard.currentSprint.task_count - dashboard.currentSprint.completed_task_count"
-                icon="pi-clock"
-                subtitle="Tasks still open"
-              />
+                title="Burndown"
+                :value="totalSprintPoints + ' pts total'"
+                icon="pi-trending-down"
+                subtitle="Remaining story points per day"
+              >
+                <BurndownChart :series="metrics.burndownSeries.value" :total-points="totalSprintPoints" />
+              </MetricCard>
+
+              <!-- Commit Frequency -->
+              <MetricCard
+                title="Commit Frequency"
+                :value="metrics.commitsByDay.value.reduce((s, d) => s + d.count, 0) || '—'"
+                icon="pi-code"
+                subtitle="Commits in sprint window"
+              >
+                <CommitFrequencyChart :days="metrics.commitsByDay.value" />
+              </MetricCard>
+
+              <!-- Velocity (project-wide) -->
+              <MetricCard
+                title="Velocity"
+                icon="pi-chart-bar"
+                subtitle="Story points completed per sprint"
+              >
+                <VelocityChart :sprints="velocityData" />
+              </MetricCard>
             </div>
           </template>
 
