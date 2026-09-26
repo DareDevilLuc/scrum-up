@@ -453,7 +453,7 @@ Build a per-sprint Kanban board where developers can move their assigned tasks t
 
 ## Sub-Task 10 — Project Dashboard Shell
 
-**Status:** `[ ] pending`
+**Status:** `[x] complete`
 
 **Intent:**
 Build the project-level dashboard that serves as the hub for all project metrics, sprint navigation, and GitHub data. This sub-task creates the layout and wires up the sprint selector; the actual chart components and GitHub feed are added in Sub-Tasks 11 and 12.
