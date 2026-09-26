@@ -173,13 +173,16 @@ export const useTeamsStore = defineStore('teams', () => {
         }
       }
 
-      // Fetch roles: look for project_head scoped to this team, or super_admin global
+      // Fetch roles: only rows scoped to THIS team or global super_admin.
+      // Without this filter, a user who is project_head of a different team
+      // would incorrectly appear as project_head here too.
       let roleMap: Record<string, 'project_head' | 'developer' | 'super_admin'> = {}
       if (userIds.length > 0) {
         const { data: rolesData } = await supabase
           .from('user_roles')
           .select('user_id, role, scope_type, scope_id')
           .in('user_id', userIds)
+          .or(`scope_type.eq.global,and(scope_type.eq.team,scope_id.eq.${teamId})`)
 
         for (const r of rolesData ?? []) {
           const existing = roleMap[r.user_id]
@@ -188,7 +191,7 @@ export const useTeamsStore = defineStore('teams', () => {
             roleMap[r.user_id] = 'super_admin'
           } else if (
             r.role === 'project_head' &&
-            (r.scope_id === teamId || r.scope_type === 'global') &&
+            r.scope_id === teamId &&
             existing !== 'super_admin'
           ) {
             roleMap[r.user_id] = 'project_head'
