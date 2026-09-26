@@ -30,7 +30,7 @@ export interface ProjectDetail {
   created_at: string
   client_id: string | null
   team_id: string | null
-  head_user_id: string | null
+  created_by: string | null
   client_name: string | null
   team_name: string | null
 }
@@ -80,7 +80,7 @@ export const useProjectsStore = defineStore('projects', () => {
       const { data: headProjects, error: headError } = await supabase
         .from('projects')
         .select('id, name, status, start_date, end_date, created_at, client_id, team_id, clients(name), teams(name)')
-        .eq('head_user_id', userId)
+        .eq('created_by', userId)
 
       if (headError) throw headError
 
@@ -98,7 +98,7 @@ export const useProjectsStore = defineStore('projects', () => {
           .from('projects')
           .select('id, name, status, start_date, end_date, created_at, client_id, team_id, clients(name), teams(name)')
           .in('team_id', teamIds)
-          .neq('head_user_id', userId) // avoid duplicates with headProjects
+          .neq('created_by', userId) // avoid duplicates with headProjects
 
         if (tpError) throw tpError
         teamProjects = tp ?? []
@@ -160,7 +160,7 @@ export const useProjectsStore = defineStore('projects', () => {
           start_date: payload.start_date,
           end_date: payload.end_date,
           client_id: clientId,
-          head_user_id: auth.user!.id,
+          created_by: auth.user!.id,
           status: 'planning' as ProjectStatus,
         })
         .select('id')
@@ -183,7 +183,7 @@ export const useProjectsStore = defineStore('projects', () => {
     try {
       const { data, error: sbError } = await supabase
         .from('projects')
-        .select('id, name, requirements, status, start_date, end_date, created_at, client_id, team_id, head_user_id, clients(name), teams(name)')
+        .select('id, name, requirements, status, start_date, end_date, created_at, client_id, team_id, created_by, clients(name), teams(name)')
         .eq('id', id)
         .single()
 
