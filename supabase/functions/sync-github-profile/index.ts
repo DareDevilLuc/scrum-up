@@ -56,17 +56,30 @@ serve(async (req) => {
       'https://api.github.com/user/repos?per_page=100&sort=stars&direction=desc',
       { headers: ghHeaders },
     )
-    const allRepos = await reposRes.json()
-    const topRepos = (Array.isArray(allRepos) ? allRepos : [])
+    const reposJson = await reposRes.json()
+    const repoList: Record<string, unknown>[] = Array.isArray(reposJson) ? reposJson : []
+
+    const mapRepo = (r: Record<string, unknown>) => ({
+      name: r.name,
+      full_name: r.full_name,
+      url: r.html_url,
+      description: r.description,
+      stars: r.stargazers_count,
+      language: r.language,
+    })
+
+    const topPublicRepos = repoList
+      .filter((r) => !r.private)
       .slice(0, 10)
-      .map((r: Record<string, unknown>) => ({
-        name: r.name,
-        full_name: r.full_name,
-        url: r.html_url,
-        description: r.description,
-        stars: r.stargazers_count,
-        language: r.language,
-      }))
+      .map(mapRepo)
+
+    const topPrivateRepos = repoList
+      .filter((r) => r.private)
+      .slice(0, 10)
+      .map(mapRepo)
+
+    // topRepos is used downstream to aggregate language stats (public repos only)
+    const topRepos = topPublicRepos
 
     // Aggregate language stats from top 5 repos
     const languageTotals: Record<string, number> = {}
@@ -97,7 +110,8 @@ serve(async (req) => {
         {
           id: user_id,
           bio: profile.bio ?? null,
-          github_repos: topRepos,
+          github_repos: topPublicRepos,
+          private_github_repos: topPrivateRepos,
           languages: languageTotals,
           tech_stack: techStack,
         },

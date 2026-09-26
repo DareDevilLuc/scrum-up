@@ -34,12 +34,17 @@ const editPortfolioUrl = ref('')
 const saving = ref(false)
 const saveSuccess = ref(false)
 
-onMounted(() => loadProfile())
+// Wait for auth session to resolve before the first fetch so isOwnProfile
+// is accurate and private_github_repos is included when needed.
+onMounted(async () => {
+  await auth.waitUntilReady()
+  loadProfile()
+})
 watch(userId, loadProfile)
 
 async function loadProfile() {
   if (!userId.value) return
-  await profileStore.fetchProfile(userId.value)
+  await profileStore.fetchProfile(userId.value, isOwnProfile.value)
   resetEditState()
 }
 
@@ -175,19 +180,45 @@ const chartOptions = {
 
       <div class="profile-grid">
         <!-- Language breakdown -->
-        <div class="profile-card" v-if="chartData">
+        <div class="profile-card" :class="{ 'profile-card--full': !profileStore.profile.github_repos?.length }" v-if="chartData">
           <h2 class="card-title">Language Breakdown</h2>
           <div class="chart-wrapper">
             <Bar :data="chartData" :options="chartOptions" />
           </div>
         </div>
 
-        <!-- Top GitHub Repos -->
+        <!-- Top Public GitHub Repos -->
         <div class="profile-card" v-if="profileStore.profile.github_repos?.length">
           <h2 class="card-title">Top Repositories</h2>
           <div class="repo-list">
-          <a  
+            <a
               v-for="repo in profileStore.profile.github_repos"
+              :key="repo.full_name"
+              :href="repo.url"
+              target="_blank"
+              class="repo-item"
+            >
+              <div class="repo-main">
+                <span class="repo-name">{{ repo.name }}</span>
+                <span v-if="repo.language" class="repo-lang">{{ repo.language }}</span>
+              </div>
+              <p v-if="repo.description" class="repo-desc">{{ repo.description }}</p>
+              <span class="repo-stars">
+                <i class="pi pi-star" /> {{ repo.stars }}
+              </span>
+            </a>
+          </div>
+        </div>
+
+        <!-- Private Repos — only visible to the owner -->
+        <div class="profile-card profile-card--private" v-if="isOwnProfile && profileStore.profile.private_github_repos?.length">
+          <h2 class="card-title card-title--private">
+            <i class="pi pi-lock" />
+            Private Repositories
+          </h2>
+          <div class="repo-list">
+            <a
+              v-for="repo in profileStore.profile.private_github_repos"
               :key="repo.full_name"
               :href="repo.url"
               target="_blank"
@@ -390,8 +421,35 @@ const chartOptions = {
   box-sizing: border-box;
 }
 
+.profile-card--full,
 .profile-card--edit {
   grid-column: 1 / -1;
+}
+
+.profile-card--private {
+  grid-column: 1 / -1;
+  border-color: rgba(124, 58, 237, 0.45);
+}
+
+/* Override repo-list to show two columns inside the full-width private card */
+.profile-card--private .repo-list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.6rem;
+  max-height: none;
+  overflow-y: visible;
+}
+
+@media (max-width: 700px) {
+  .profile-card--private .repo-list {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.card-title--private {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
 }
 
 .card-title {
