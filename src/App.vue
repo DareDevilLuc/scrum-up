@@ -1,10 +1,12 @@
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import Button from 'primevue/button'
 import { useAuthStore } from '@/stores/auth'
+import { useInvitationsStore } from '@/stores/invitations'
 
 const auth = useAuthStore()
+const invitations = useInvitationsStore()
 const route = useRoute()
 const router = useRouter()
 const ready = ref(false)
@@ -19,6 +21,16 @@ const showNav = computed(() =>
 onMounted(async () => {
   await auth.initialize()
   ready.value = true
+  // Load pending invitations once the user is authenticated
+  if (auth.user) {
+    invitations.fetchPending()
+  }
+})
+
+// Re-fetch when auth user changes (e.g. sign-in after page reload)
+watch(() => auth.user, (user) => {
+  if (user) invitations.fetchPending()
+  else invitations.$reset()
 })
 </script>
 
@@ -29,6 +41,13 @@ onMounted(async () => {
         <RouterLink to="/dashboard" class="nav-link">Dashboard</RouterLink>
         <RouterLink to="/projects" class="nav-link">Projects</RouterLink>
         <RouterLink to="/teams" class="nav-link">Teams</RouterLink>
+        <RouterLink to="/inbox" class="nav-link nav-link--inbox">
+          <i class="pi pi-inbox" style="font-size: 0.85rem" />
+          Inbox
+          <span v-if="invitations.pending.length > 0" class="inbox-badge">
+            {{ invitations.pending.length }}
+          </span>
+        </RouterLink>
         <RouterLink v-if="auth.role === 'super_admin'" to="/admin" class="nav-link nav-link--admin">
           <i class="pi pi-shield" style="font-size: 0.8rem" />
           Admin
@@ -104,6 +123,22 @@ onMounted(async () => {
   color: var(--su-purple-300);
   border-bottom-color: var(--su-border-glow);
   text-shadow: 0 0 8px rgba(168, 85, 247, 0.7);
+}
+.nav-link--inbox {
+  position: relative;
+}
+.inbox-badge {
+  position: absolute;
+  top: -6px;
+  right: -10px;
+  background: var(--su-danger);
+  color: #fff;
+  font-size: 0.6rem;
+  font-weight: 800;
+  border-radius: 999px;
+  padding: 0.05rem 0.35rem;
+  line-height: 1.4;
+  pointer-events: none;
 }
 .nav-profile-btn {
   display: flex;

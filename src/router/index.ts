@@ -119,6 +119,14 @@ const routes: RouteRecordRaw[] = [
     beforeEnter: requireRole(['project_head', 'super_admin']),
   },
 
+  // ── Inbox ────────────────────────────────────────────────────────────────
+  {
+    path: '/inbox',
+    name: 'inbox',
+    component: () => import('../views/InboxView.vue'),
+    beforeEnter: requireAuth,
+  },
+
   // ── Profiles ──────────────────────────────────────────────────────────────
   {
     path: '/profile',
