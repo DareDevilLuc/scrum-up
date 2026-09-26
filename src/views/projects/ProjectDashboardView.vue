@@ -22,9 +22,11 @@ const isProjectHead = computed(
   () => auth.role === 'project_head' || auth.role === 'super_admin',
 )
 
+// onMounted fires on every entry (including back-navigation) because the view
+// is not wrapped in <KeepAlive>, so this naturally re-fetches after sprint confirmation.
 onMounted(() => dashboard.fetchProjectOverview(projectId.value))
 
-// Reload when navigating between projects
+// Also reload when navigating between different projects without unmounting
 watch(projectId, (newId) => dashboard.fetchProjectOverview(newId))
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -127,14 +129,6 @@ function initials(name: string): string {
           <div class="section-card">
             <div class="section-heading-row">
               <h2 class="section-heading">Sprints</h2>
-              <Button
-                v-if="isProjectHead"
-                label="Plan Sprint"
-                icon="pi pi-bolt"
-                size="small"
-                class="plan-btn"
-                @click="router.push({ name: 'sprint-planner', params: { id: projectId } })"
-              />
             </div>
 
             <!-- No sprints CTA -->
@@ -586,6 +580,5 @@ function initials(name: string): string {
 .action-arrow { color: var(--su-text-muted); font-size: 0.85rem; flex-shrink: 0; }
 
 /* ── Button helpers ── */
-.plan-btn { flex-shrink: 0; }
 .cta-btn { align-self: center; }
 </style>
