@@ -232,12 +232,14 @@ onMounted(async () => {
 }
 .page-title {
   font-size: 1.5rem;
-  font-weight: 700;
+  font-weight: 800;
   margin: 0 0 0.25rem;
+  color: var(--su-purple-300);
+  text-shadow: 0 0 10px rgba(168, 85, 247, 0.6);
 }
 .page-subtitle {
   margin: 0;
-  color: var(--p-text-muted-color, #6b7280);
+  color: var(--su-text-muted);
   font-size: 0.9rem;
 }
 .spinner-wrap {
@@ -253,10 +255,11 @@ onMounted(async () => {
 .user-name {
   font-weight: 600;
   font-size: 0.9rem;
+  color: var(--su-text);
 }
 .user-github {
   font-size: 0.8rem;
-  color: var(--p-text-muted-color, #6b7280);
+  color: var(--su-text-muted);
 }
 .roles-cell {
   display: flex;
@@ -271,7 +274,7 @@ onMounted(async () => {
 }
 .role-scope {
   font-size: 0.75rem;
-  color: var(--p-text-muted-color, #6b7280);
+  color: var(--su-text-muted);
 }
 .remove-role-btn {
   padding: 0 !important;
@@ -279,7 +282,7 @@ onMounted(async () => {
   height: 1.4rem !important;
 }
 .no-roles {
-  color: var(--p-text-muted-color, #6b7280);
+  color: var(--su-text-muted);
   font-size: 0.85rem;
 }
 .assign-form {
@@ -290,6 +293,7 @@ onMounted(async () => {
 .assign-target {
   margin: 0;
   font-size: 0.9rem;
+  color: var(--su-text);
 }
 .form-field {
   display: flex;
@@ -299,6 +303,7 @@ onMounted(async () => {
 .form-field label {
   font-size: 0.85rem;
   font-weight: 600;
+  color: var(--su-text);
 }
 .mb-4 {
   margin-bottom: 1rem;

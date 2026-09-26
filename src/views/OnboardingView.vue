@@ -40,23 +40,24 @@ async function handleSubmit() {
 </script>
 
 <template>
-  <div class="flex min-h-screen items-center justify-center bg-surface-50 dark:bg-surface-900">
-    <div class="w-full max-w-sm rounded-2xl bg-white dark:bg-surface-800 p-8 shadow-md flex flex-col gap-6">
-      <div class="text-center">
-        <h1 class="text-2xl font-semibold text-surface-900 dark:text-surface-0">Welcome!</h1>
-        <p class="mt-1 text-sm text-surface-500">
+  <div class="onboarding-page">
+    <div class="onboarding-card">
+      <div class="onboarding-brand">
+        <div class="brand-icon">
+          <i class="pi pi-user" />
+        </div>
+        <h1 class="brand-name">Welcome!</h1>
+        <p class="brand-sub">
           Signed in as
-          <span class="font-medium text-surface-700 dark:text-surface-200">{{ auth.user?.email }}</span>.
-          Choose a display name to continue.
+          <span class="brand-email">{{ auth.user?.email }}</span>.
+          Choose a display name to get started.
         </p>
       </div>
 
       <Message v-if="error" severity="error" :closable="false">{{ error }}</Message>
 
-      <div class="flex flex-col gap-2">
-        <label for="display-name" class="text-sm font-medium text-surface-700 dark:text-surface-200">
-          Display name
-        </label>
+      <div class="form-field">
+        <label for="display-name" class="field-label">Display name</label>
         <InputText
           id="display-name"
           v-model="displayName"
@@ -69,11 +70,95 @@ async function handleSubmit() {
 
       <Button
         label="Continue"
+        icon="pi pi-arrow-right"
         :loading="loading"
         :disabled="!displayName.trim()"
-        class="w-full"
+        class="continue-btn"
         @click="handleSubmit"
       />
     </div>
   </div>
 </template>
+
+<style scoped>
+.onboarding-page {
+  min-height: 100vh;
+  background: var(--su-bg);
+  background-image: radial-gradient(ellipse 60% 50% at 50% 0%, rgba(124, 58, 237, 0.12) 0%, transparent 70%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.onboarding-card {
+  width: 100%;
+  max-width: 22rem;
+  background: var(--su-bg-surface);
+  border: 1px solid var(--su-border-glow);
+  border-radius: 16px;
+  padding: 2.5rem 2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  box-shadow: 0 0 0 1px var(--su-border-glow), 0 0 40px 8px rgba(124, 58, 237, 0.25);
+}
+
+.onboarding-brand {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  text-align: center;
+}
+
+.brand-icon {
+  width: 3rem;
+  height: 3rem;
+  border-radius: 12px;
+  background: linear-gradient(135deg, var(--su-purple-700), var(--su-purple-500));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.25rem;
+  color: var(--su-purple-200);
+  box-shadow: 0 0 16px 4px rgba(124, 58, 237, 0.5);
+  margin-bottom: 0.25rem;
+}
+
+.brand-name {
+  margin: 0;
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: var(--su-purple-300);
+  text-shadow: 0 0 12px rgba(168, 85, 247, 0.7);
+  letter-spacing: -0.02em;
+}
+
+.brand-sub {
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--su-text-muted);
+}
+
+.brand-email {
+  color: var(--su-purple-300);
+  font-weight: 600;
+}
+
+.form-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.field-label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--su-text);
+}
+
+.continue-btn {
+  width: 100%;
+  justify-content: center;
+}
+</style>

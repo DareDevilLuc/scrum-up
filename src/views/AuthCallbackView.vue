@@ -63,10 +63,38 @@ onMounted(async () => {
 </script>
 
 <template>
-  <div class="flex min-h-screen items-center justify-center bg-surface-50 dark:bg-surface-900">
-    <Message v-if="error" severity="error" :closable="false" class="max-w-sm">
-      {{ error }}
-    </Message>
-    <ProgressSpinner v-else />
+  <div class="callback-page">
+    <div v-if="error" class="callback-error-wrap">
+      <Message severity="error" :closable="false">{{ error }}</Message>
+    </div>
+    <div v-else class="callback-spinner-wrap">
+      <ProgressSpinner />
+      <p class="callback-label">Authenticating…</p>
+    </div>
   </div>
 </template>
+
+<style scoped>
+.callback-page {
+  min-height: 100vh;
+  background: var(--su-bg);
+  background-image: radial-gradient(ellipse 60% 50% at 50% 0%, rgba(124, 58, 237, 0.12) 0%, transparent 70%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.callback-error-wrap {
+  max-width: 22rem;
+}
+.callback-spinner-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+}
+.callback-label {
+  margin: 0;
+  font-size: 0.9rem;
+  color: var(--su-text-muted);
+}
+</style>

@@ -47,16 +47,17 @@ onMounted(async () => {
   align-items: center;
   justify-content: space-between;
   padding: 0 1.5rem;
-  height: 3rem;
-  background: var(--p-surface-card, #fff);
-  border-bottom: 1px solid var(--p-surface-border, #e2e8f0);
+  height: 3.25rem;
+  background: var(--su-bg-surface);
+  border-bottom: 1px solid var(--su-border);
+  box-shadow: 0 1px 0 var(--su-border), 0 2px 12px rgba(124, 58, 237, 0.12);
   position: sticky;
   top: 0;
   z-index: 100;
 }
 .app-nav__links {
   display: flex;
-  gap: 1.25rem;
+  gap: 1.5rem;
   align-items: center;
 }
 .app-nav__actions {
@@ -66,31 +67,32 @@ onMounted(async () => {
 }
 .nav-link {
   text-decoration: none;
-  font-size: 0.9rem;
-  color: var(--p-text-color, #374151);
+  font-size: 0.875rem;
+  color: var(--su-text-muted);
   font-weight: 500;
   display: flex;
   align-items: center;
-  gap: 0.3rem;
+  gap: 0.35rem;
   padding: 0.2rem 0;
   border-bottom: 2px solid transparent;
-  transition: border-color 0.15s, color 0.15s;
+  transition: border-color 0.15s, color 0.15s, text-shadow 0.15s;
 }
 .nav-link:hover,
 .nav-link.router-link-active {
-  color: var(--p-primary-color, #6366f1);
-  border-bottom-color: var(--p-primary-color, #6366f1);
+  color: var(--su-purple-300);
+  border-bottom-color: var(--su-purple-400);
 }
 .nav-link--admin {
-  color: var(--p-red-600, #dc2626);
+  color: var(--su-purple-400);
 }
 .nav-link--admin:hover,
 .nav-link--admin.router-link-active {
-  color: var(--p-red-700, #b91c1c);
-  border-bottom-color: var(--p-red-600, #dc2626);
+  color: var(--su-purple-300);
+  border-bottom-color: var(--su-border-glow);
+  text-shadow: 0 0 8px rgba(168, 85, 247, 0.7);
 }
 .nav-user {
-  font-size: 0.85rem;
-  color: var(--p-text-muted-color, #6b7280);
+  font-size: 0.8rem;
+  color: var(--su-text-muted);
 }
 </style>

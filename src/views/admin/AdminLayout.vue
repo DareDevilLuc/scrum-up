@@ -58,14 +58,15 @@ function isActive(path: string) {
 .admin-layout {
   display: flex;
   min-height: 100vh;
-  background: var(--p-surface-ground, #f8fafc);
+  background: var(--su-bg);
 }
 
 .admin-sidebar {
   width: 220px;
   flex-shrink: 0;
-  background: var(--p-surface-card, #ffffff);
-  border-right: 1px solid var(--p-surface-border, #e2e8f0);
+  background: var(--su-bg-surface);
+  border-right: 1px solid var(--su-border);
+  box-shadow: 1px 0 12px rgba(124, 58, 237, 0.1);
   display: flex;
   flex-direction: column;
 }
@@ -77,7 +78,9 @@ function isActive(path: string) {
   padding: 1.25rem 1rem;
   font-weight: 700;
   font-size: 1rem;
-  border-bottom: 1px solid var(--p-surface-border, #e2e8f0);
+  border-bottom: 1px solid var(--su-border);
+  color: var(--su-purple-300);
+  text-shadow: 0 0 8px rgba(168, 85, 247, 0.5);
 }
 
 .admin-sidebar__title {
@@ -94,7 +97,7 @@ function isActive(path: string) {
 
 .admin-sidebar__footer {
   padding: 0.75rem 0.5rem;
-  border-top: 1px solid var(--p-surface-border, #e2e8f0);
+  border-top: 1px solid var(--su-border);
 }
 
 .admin-nav-item {
@@ -103,25 +106,30 @@ function isActive(path: string) {
   gap: 0.6rem;
   padding: 0.55rem 0.75rem;
   border-radius: 6px;
+  border-left: 2px solid transparent;
   text-decoration: none;
-  color: var(--p-text-color, #374151);
+  color: var(--su-text-muted);
   font-size: 0.9rem;
-  transition: background 0.15s, color 0.15s;
+  transition: background 0.15s, color 0.15s, border-color 0.15s, text-shadow 0.15s;
 }
 
 .admin-nav-item:hover {
-  background: var(--p-surface-hover, #f1f5f9);
+  background: rgba(124, 58, 237, 0.12);
+  color: var(--su-purple-300);
 }
 
 .admin-nav-item--active {
-  background: var(--p-primary-100, #e0e7ff);
-  color: var(--p-primary-700, #4338ca);
+  background: rgba(124, 58, 237, 0.2);
+  color: var(--su-purple-300);
+  border-left-color: var(--su-purple-400);
   font-weight: 600;
+  text-shadow: 0 0 8px rgba(168, 85, 247, 0.6);
 }
 
 .admin-main {
   flex: 1;
   padding: 2rem;
   overflow: auto;
+  background: var(--su-bg);
 }
 </style>

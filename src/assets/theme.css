@@ -1,0 +1,339 @@
+/* =============================================================================
+   Scrum-Up Global Theme — Neon Purple Dark
+   Import this file in src/main.ts before any component styles.
+============================================================================= */
+
+/* ── Custom Properties ──────────────────────────────────────────────────────── */
+:root {
+  --su-bg: #0a0a0f;
+  --su-bg-surface: #0f0f1a;
+  --su-bg-elevated: #14142a;
+  --su-border: #2a1a4e;
+  --su-border-glow: #7c3aed;
+  --su-text: #e2d9f3;
+  --su-text-muted: #8b7aab;
+  --su-purple-900: #1a0a3e;
+  --su-purple-700: #4c1d95;
+  --su-purple-500: #7c3aed;
+  --su-purple-400: #a855f7;
+  --su-purple-300: #c084fc;
+  --su-purple-200: #e9d5ff;
+  --su-success: #22c55e;
+  --su-warning: #f59e0b;
+  --su-danger: #ef4444;
+
+  /* ── PrimeVue surface token overrides ────────────────────────────────────── */
+  --p-surface-ground: #0a0a0f;
+  --p-surface-card: #0f0f1a;
+  --p-surface-overlay: #14142a;
+  --p-surface-border: #2a1a4e;
+  --p-surface-hover: rgba(124, 58, 237, 0.12);
+  --p-text-color: #e2d9f3;
+  --p-text-muted-color: #8b7aab;
+  --p-primary-color: #7c3aed;
+  --p-primary-contrast-color: #e9d5ff;
+  --p-primary-hover-color: #a855f7;
+  --p-primary-100: rgba(124, 58, 237, 0.15);
+  --p-primary-700: #4c1d95;
+  --p-content-background: #0f0f1a;
+  --p-content-border-color: #2a1a4e;
+  --p-content-color: #e2d9f3;
+}
+
+/* ── Global Reset ───────────────────────────────────────────────────────────── */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+body {
+  background: var(--su-bg);
+  color: var(--su-text);
+  font-family: 'Inter', -apple-system, 'Segoe UI', system-ui, sans-serif;
+  font-size: 14px;
+  line-height: 1.6;
+  margin: 0;
+}
+
+/* ── PrimeVue Component Global Overrides ────────────────────────────────────── */
+
+/* DataTable */
+.p-datatable {
+  background: var(--su-bg-surface);
+  border: 1px solid var(--su-border);
+  border-radius: 10px;
+  overflow: hidden;
+}
+.p-datatable .p-datatable-thead > tr > th {
+  background: var(--su-purple-900) !important;
+  color: var(--su-purple-300) !important;
+  border-bottom: 1px solid var(--su-border-glow) !important;
+  border-color: var(--su-border) !important;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+.p-datatable .p-datatable-tbody > tr {
+  background: var(--su-bg-surface) !important;
+  color: var(--su-text) !important;
+  border-color: var(--su-border) !important;
+}
+.p-datatable .p-datatable-tbody > tr:nth-child(even) {
+  background: rgba(124, 58, 237, 0.04) !important;
+}
+.p-datatable .p-datatable-tbody > tr:hover {
+  background: rgba(124, 58, 237, 0.1) !important;
+}
+.p-datatable .p-datatable-tbody > tr > td {
+  border-color: var(--su-border) !important;
+  color: var(--su-text) !important;
+}
+.p-datatable .p-paginator {
+  background: var(--su-bg-surface) !important;
+  border-top: 1px solid var(--su-border) !important;
+  color: var(--su-text-muted) !important;
+}
+.p-datatable .p-paginator .p-paginator-page.p-highlight {
+  background: rgba(124, 58, 237, 0.25) !important;
+  color: var(--su-purple-300) !important;
+  border-color: var(--su-border-glow) !important;
+}
+
+/* Button */
+.p-button {
+  background: linear-gradient(135deg, var(--su-purple-700), var(--su-purple-500)) !important;
+  border-color: var(--su-border-glow) !important;
+  color: var(--su-purple-200) !important;
+  box-shadow: 0 0 8px 1px rgba(124, 58, 237, 0.35) !important;
+  transition: box-shadow 0.2s, background 0.2s !important;
+}
+.p-button:hover:not(:disabled) {
+  background: linear-gradient(135deg, #5b21b6, var(--su-purple-400)) !important;
+  box-shadow: 0 0 14px 3px rgba(168, 85, 247, 0.55) !important;
+}
+.p-button.p-button-text,
+.p-button.p-button-outlined {
+  background: transparent !important;
+  box-shadow: none !important;
+}
+.p-button.p-button-text {
+  color: var(--su-text-muted) !important;
+  border-color: transparent !important;
+}
+.p-button.p-button-text:hover:not(:disabled) {
+  color: var(--su-purple-300) !important;
+  background: rgba(124, 58, 237, 0.1) !important;
+}
+.p-button.p-button-outlined {
+  color: var(--su-purple-300) !important;
+  border-color: var(--su-border-glow) !important;
+}
+.p-button.p-button-outlined:hover:not(:disabled) {
+  background: rgba(124, 58, 237, 0.12) !important;
+}
+.p-button.p-button-danger {
+  background: rgba(239, 68, 68, 0.15) !important;
+  border-color: var(--su-danger) !important;
+  color: var(--su-danger) !important;
+  box-shadow: none !important;
+}
+.p-button.p-button-danger:hover:not(:disabled) {
+  background: rgba(239, 68, 68, 0.25) !important;
+  box-shadow: 0 0 10px 2px rgba(239, 68, 68, 0.3) !important;
+}
+.p-button-secondary.p-button-text {
+  color: var(--su-text-muted) !important;
+}
+
+/* Input / Select */
+.p-inputtext,
+.p-password input {
+  background: var(--su-bg-elevated) !important;
+  border-color: var(--su-border) !important;
+  color: var(--su-text) !important;
+  border-radius: 6px !important;
+}
+.p-inputtext:focus,
+.p-password input:focus {
+  border-color: var(--su-border-glow) !important;
+  box-shadow: 0 0 0 2px rgba(124, 58, 237, 0.3) !important;
+}
+.p-inputtext::placeholder {
+  color: var(--su-text-muted) !important;
+}
+
+/* Dropdown / Select */
+.p-dropdown,
+.p-multiselect {
+  background: var(--su-bg-elevated) !important;
+  border-color: var(--su-border) !important;
+  color: var(--su-text) !important;
+}
+.p-dropdown:not(.p-disabled).p-focus,
+.p-multiselect:not(.p-disabled).p-focus {
+  border-color: var(--su-border-glow) !important;
+  box-shadow: 0 0 0 2px rgba(124, 58, 237, 0.3) !important;
+}
+.p-dropdown-panel,
+.p-multiselect-panel {
+  background: var(--su-bg-elevated) !important;
+  border: 1px solid var(--su-border-glow) !important;
+  box-shadow: 0 0 20px 4px rgba(124, 58, 237, 0.25) !important;
+}
+.p-dropdown-item,
+.p-multiselect-item {
+  color: var(--su-text) !important;
+}
+.p-dropdown-item:hover,
+.p-multiselect-item:hover {
+  background: rgba(124, 58, 237, 0.15) !important;
+  color: var(--su-purple-300) !important;
+}
+.p-dropdown-item.p-highlight,
+.p-multiselect-item.p-highlight {
+  background: rgba(124, 58, 237, 0.25) !important;
+  color: var(--su-purple-300) !important;
+}
+.p-dropdown-label,
+.p-multiselect-label {
+  color: var(--su-text) !important;
+}
+.p-multiselect-token {
+  background: rgba(124, 58, 237, 0.25) !important;
+  color: var(--su-purple-300) !important;
+  border: 1px solid rgba(124, 58, 237, 0.4) !important;
+}
+
+/* Dialog */
+.p-dialog {
+  background: var(--su-bg-surface) !important;
+  border: 1px solid var(--su-border-glow) !important;
+  border-radius: 12px !important;
+  box-shadow: 0 0 0 1px var(--su-border-glow), 0 0 40px 8px rgba(124, 58, 237, 0.3) !important;
+  color: var(--su-text) !important;
+}
+.p-dialog .p-dialog-header {
+  background: var(--su-purple-900) !important;
+  border-bottom: 1px solid var(--su-border-glow) !important;
+  color: var(--su-purple-300) !important;
+  border-radius: 12px 12px 0 0 !important;
+}
+.p-dialog .p-dialog-header .p-dialog-title {
+  color: var(--su-purple-300) !important;
+  font-weight: 700 !important;
+}
+.p-dialog .p-dialog-content {
+  background: var(--su-bg-surface) !important;
+  color: var(--su-text) !important;
+}
+.p-dialog .p-dialog-footer {
+  background: var(--su-bg-surface) !important;
+  border-top: 1px solid var(--su-border) !important;
+  border-radius: 0 0 12px 12px !important;
+}
+.p-dialog-mask {
+  background: rgba(0, 0, 0, 0.7) !important;
+  backdrop-filter: blur(2px) !important;
+}
+
+/* ConfirmDialog */
+.p-confirmdialog .p-confirmdialog-message {
+  color: var(--su-text) !important;
+}
+.p-confirmdialog .p-confirmdialog-icon {
+  color: var(--su-warning) !important;
+}
+
+/* Toast */
+.p-toast .p-toast-message {
+  background: var(--su-bg-elevated) !important;
+  border: 1px solid var(--su-border-glow) !important;
+  box-shadow: 0 0 12px 2px rgba(124, 58, 237, 0.25) !important;
+  color: var(--su-text) !important;
+}
+.p-toast .p-toast-message.p-toast-message-success {
+  border-color: var(--su-success) !important;
+}
+.p-toast .p-toast-message.p-toast-message-error {
+  border-color: var(--su-danger) !important;
+}
+.p-toast .p-toast-message-text .p-toast-summary {
+  color: var(--su-text) !important;
+  font-weight: 600 !important;
+}
+.p-toast .p-toast-message-text .p-toast-detail {
+  color: var(--su-text-muted) !important;
+}
+
+/* Avatar */
+.p-avatar {
+  background: rgba(124, 58, 237, 0.25) !important;
+  color: var(--su-purple-300) !important;
+  border: 1px solid var(--su-border-glow) !important;
+}
+
+/* Tag */
+.p-tag {
+  background: rgba(124, 58, 237, 0.2) !important;
+  color: var(--su-purple-300) !important;
+  border: 1px solid rgba(124, 58, 237, 0.4) !important;
+  border-radius: 999px !important;
+}
+.p-tag.p-tag-success {
+  background: rgba(34, 197, 94, 0.15) !important;
+  color: var(--su-success) !important;
+  border-color: rgba(34, 197, 94, 0.4) !important;
+}
+.p-tag.p-tag-warn {
+  background: rgba(245, 158, 11, 0.15) !important;
+  color: var(--su-warning) !important;
+  border-color: rgba(245, 158, 11, 0.4) !important;
+}
+.p-tag.p-tag-danger {
+  background: rgba(239, 68, 68, 0.15) !important;
+  color: var(--su-danger) !important;
+  border-color: rgba(239, 68, 68, 0.4) !important;
+}
+.p-tag.p-tag-secondary {
+  background: rgba(139, 122, 171, 0.15) !important;
+  color: var(--su-text-muted) !important;
+  border-color: rgba(139, 122, 171, 0.3) !important;
+}
+
+/* Message / inline alert */
+.p-message {
+  background: rgba(124, 58, 237, 0.1) !important;
+  border: 1px solid var(--su-border-glow) !important;
+  color: var(--su-text) !important;
+  border-radius: 8px !important;
+}
+.p-message.p-message-error {
+  background: rgba(239, 68, 68, 0.1) !important;
+  border-color: var(--su-danger) !important;
+}
+.p-message .p-message-text {
+  color: var(--su-text) !important;
+}
+
+/* ProgressSpinner */
+.p-progress-spinner-circle {
+  stroke: var(--su-purple-400) !important;
+  animation: p-progress-spinner-dash 1.5s ease-in-out infinite !important;
+}
+
+/* Scrollbars */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: var(--su-bg);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--su-border-glow);
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--su-purple-400);
+}
