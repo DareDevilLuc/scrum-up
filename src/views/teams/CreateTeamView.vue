@@ -295,19 +295,23 @@ async function submit() {
 </template>
 
 <style scoped>
+/* ── Page shell ─────────────────────────────────────────────────────────────── */
+
 .create-page {
   min-height: 100vh;
   background: var(--su-bg);
-  padding: 1.5rem;
+  padding: 2rem 1.5rem;
   display: flex;
   flex-direction: column;
-  gap: 1.25rem;
-  max-width: 680px;
+  align-items: center;
+  gap: 1.5rem;
 }
 
 /* ── Header ─────────────────────────────────────────────────────────────────── */
 
 .page-header {
+  width: 100%;
+  max-width: 640px;
   display: flex;
   align-items: center;
   gap: 0.75rem;
@@ -316,7 +320,7 @@ async function submit() {
 .back-btn { flex-shrink: 0; }
 
 .page-title {
-  font-size: 1.35rem;
+  font-size: 1.4rem;
   font-weight: 800;
   color: var(--su-purple-300);
   text-shadow: 0 0 8px rgba(168, 85, 247, 0.8);
@@ -326,19 +330,30 @@ async function submit() {
   gap: 0.5rem;
 }
 
-.title-icon { color: var(--su-purple-400); }
+.title-icon {
+  color: var(--su-purple-400);
+  filter: drop-shadow(0 0 4px rgba(168, 85, 247, 0.75));
+}
 
 /* ── Card ───────────────────────────────────────────────────────────────────── */
 
 .form-card {
+  width: 100%;
+  max-width: 640px;
   background: var(--su-bg-surface);
   border: 1px solid var(--su-border);
-  border-radius: 12px;
-  padding: 1.5rem;
+  border-radius: 14px;
+  padding: 2rem;
   display: flex;
   flex-direction: column;
-  gap: 1.25rem;
-  box-shadow: 0 0 0 1px var(--su-border), 0 0 20px 4px rgba(124, 58, 237, 0.12);
+  gap: 1.5rem;
+  box-shadow: 0 0 0 1px var(--su-border), 0 0 24px 4px rgba(124, 58, 237, 0.15);
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.form-card:focus-within {
+  border-color: var(--su-border-glow);
+  box-shadow: 0 0 0 1px var(--su-border-glow), 0 0 28px 6px rgba(124, 58, 237, 0.25);
 }
 
 /* ── Fields ─────────────────────────────────────────────────────────────────── */
@@ -346,14 +361,14 @@ async function submit() {
 .field {
   display: flex;
   flex-direction: column;
-  gap: 0.4rem;
+  gap: 0.45rem;
 }
 
 .field-label {
-  font-size: 0.8rem;
+  font-size: 0.78rem;
   font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.06em;
   color: var(--su-purple-300);
 }
 
@@ -372,6 +387,10 @@ async function submit() {
   background: var(--su-bg-elevated);
   border-color: var(--su-border);
   color: var(--su-text);
+  border-radius: 8px;
+  padding: 0.6rem 0.85rem;
+  font-size: 0.92rem;
+  transition: border-color 0.15s, box-shadow 0.15s;
 }
 
 :deep(.field-input.p-inputtext:focus) {
@@ -390,33 +409,36 @@ async function submit() {
   right: 0.75rem;
   top: 50%;
   transform: translateY(-50%);
-  color: var(--su-text-muted);
+  color: var(--su-purple-400);
   font-size: 0.85rem;
+  pointer-events: none;
 }
 
 .search-results {
-  margin-top: 0.35rem;
+  margin-top: 0.4rem;
   background: var(--su-bg-elevated);
-  border: 1px solid var(--su-border);
+  border: 1px solid var(--su-border-glow);
   border-radius: 8px;
   overflow: hidden;
+  box-shadow: 0 0 16px 4px rgba(124, 58, 237, 0.2);
 }
 
 .search-result-row {
   display: flex;
   align-items: center;
-  gap: 0.6rem;
-  padding: 0.55rem 0.8rem;
+  gap: 0.65rem;
+  padding: 0.6rem 0.9rem;
   cursor: pointer;
   transition: background 0.1s;
+  min-width: 0;
 }
 
-.search-result-row:hover {
-  background: rgba(124, 58, 237, 0.12);
+.search-result-row:not(.result-added):hover {
+  background: rgba(124, 58, 237, 0.14);
 }
 
 .result-added {
-  opacity: 0.5;
+  opacity: 0.45;
   cursor: default;
 }
 
@@ -424,18 +446,26 @@ async function submit() {
   font-size: 0.88rem;
   font-weight: 600;
   color: var(--su-text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .result-github {
   font-size: 0.78rem;
   color: var(--su-text-muted);
   flex: 1;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .result-icon {
-  font-size: 0.8rem;
+  font-size: 0.82rem;
   color: var(--su-purple-300);
   margin-left: auto;
+  flex-shrink: 0;
 }
 
 :deep(.avatar-fallback .p-avatar) {
@@ -450,13 +480,15 @@ async function submit() {
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
+  border-top: 1px solid var(--su-border);
+  padding-top: 1rem;
 }
 
 .invites-label {
-  font-size: 0.78rem;
+  font-size: 0.75rem;
   font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.06em;
   color: var(--su-text-muted);
   margin: 0;
 }
@@ -464,17 +496,24 @@ async function submit() {
 .invites-list {
   display: flex;
   flex-direction: column;
-  gap: 0.4rem;
+  gap: 0.45rem;
 }
 
 .invite-row {
   display: flex;
   align-items: center;
-  gap: 0.6rem;
+  gap: 0.65rem;
   background: var(--su-bg-elevated);
   border: 1px solid var(--su-border);
   border-radius: 8px;
-  padding: 0.5rem 0.75rem;
+  padding: 0.55rem 0.8rem;
+  transition: border-color 0.15s, box-shadow 0.15s;
+  min-width: 0;
+}
+
+.invite-row:hover {
+  border-color: rgba(124, 58, 237, 0.45);
+  box-shadow: 0 0 8px 1px rgba(124, 58, 237, 0.12);
 }
 
 .invite-name {
@@ -482,42 +521,50 @@ async function submit() {
   font-weight: 600;
   color: var(--su-text);
   flex: 1;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .role-toggle {
   display: flex;
   align-items: center;
   gap: 0.3rem;
-  font-size: 0.72rem;
+  font-size: 0.7rem;
   font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.05em;
   border-radius: 999px;
-  padding: 0.15rem 0.55rem;
+  padding: 0.2rem 0.65rem;
   cursor: pointer;
   border: 1px solid transparent;
   background: transparent;
-  transition: background 0.1s, border-color 0.1s;
+  transition: background 0.15s, border-color 0.15s, box-shadow 0.15s;
+  flex-shrink: 0;
+  white-space: nowrap;
 }
 
 .role-toggle--developer {
   color: var(--su-purple-300);
-  border-color: rgba(124, 58, 237, 0.35);
+  border-color: rgba(124, 58, 237, 0.4);
   background: rgba(124, 58, 237, 0.1);
 }
 
 .role-toggle--developer:hover {
   background: rgba(124, 58, 237, 0.22);
+  box-shadow: 0 0 6px 1px rgba(124, 58, 237, 0.25);
 }
 
 .role-toggle--project_head {
   color: #fbbf24;
-  border-color: rgba(251, 191, 36, 0.35);
+  border-color: rgba(251, 191, 36, 0.4);
   background: rgba(251, 191, 36, 0.1);
 }
 
 .role-toggle--project_head:hover {
   background: rgba(251, 191, 36, 0.22);
+  box-shadow: 0 0 6px 1px rgba(251, 191, 36, 0.2);
 }
 
 .remove-btn { flex-shrink: 0; }
@@ -532,5 +579,6 @@ async function submit() {
   gap: 0.75rem;
   flex-wrap: wrap;
   padding-top: 0.25rem;
+  border-top: 1px solid var(--su-border);
 }
 </style>
