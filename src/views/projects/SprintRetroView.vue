@@ -3,6 +3,7 @@ import { ref, computed, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import Button from 'primevue/button'
 import InputText from 'primevue/inputtext'
+import Checkbox from 'primevue/checkbox'
 import ProgressSpinner from 'primevue/progressspinner'
 import Message from 'primevue/message'
 import { useToast } from 'primevue/usetoast'
@@ -26,10 +27,16 @@ const isProjectHead = computed(
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
+interface RetroNote {
+  text: string
+  author: string       // display_name of the submitter
+  anonymous: boolean   // if true, show "Anonymous" instead of author name
+}
+
 interface RetroNotes {
-  went_well: string[]
-  could_improve: string[]
-  action_items: string[]
+  went_well: RetroNote[]
+  could_improve: RetroNote[]
+  action_items: RetroNote[]
 }
 
 type RetroColumn = keyof RetroNotes
@@ -42,12 +49,52 @@ const loading = ref(false)
 const saving = ref(false)
 const error = ref<string | null>(null)
 
-// Per-column new-note inputs
+// Per-column inputs
 const newNote = ref<Record<RetroColumn, string>>({
   went_well: '',
   could_improve: '',
   action_items: '',
 })
+
+// Per-column anonymous toggle — shared across all columns but independent
+const postAnonymous = ref<Record<RetroColumn, boolean>>({
+  went_well: false,
+  could_improve: false,
+  action_items: false,
+})
+
+// Current user's display name (fallback to email prefix)
+const currentAuthor = computed(() => {
+  const user = auth.user
+  if (!user) return 'Unknown'
+  return (user as any).user_metadata?.display_name
+    ?? (user as any).user_metadata?.full_name
+    ?? user.email?.split('@')[0]
+    ?? 'Unknown'
+})
+
+// ── Retro AI summary ──────────────────────────────────────────────────────────
+
+const retroSummary = ref<string | null>(null)
+const generatingSummary = ref(false)
+const summaryError = ref<string | null>(null)
+
+async function generateRetroSummary() {
+  generatingSummary.value = true
+  summaryError.value = null
+  try {
+    const { data, error: fnErr } = await supabase.functions.invoke(
+      'generate-retro-summary',
+      { body: { sprint_id: sprintId.value } },
+    )
+    if (fnErr) throw new Error(fnErr.message)
+    retroSummary.value = data.summary
+  } catch (e) {
+    summaryError.value = (e as Error).message
+  } finally {
+    generatingSummary.value = false
+  }
+}
 
 // ── Save (debounced) ──────────────────────────────────────────────────────────
 
@@ -79,7 +126,11 @@ async function persistNotes() {
 function addNote(col: RetroColumn) {
   const text = newNote.value[col].trim()
   if (!text) return
-  notes.value[col].push(text)
+  notes.value[col].push({
+    text,
+    author: currentAuthor.value,
+    anonymous: postAnonymous.value[col],
+  })
   newNote.value[col] = ''
   scheduleSave()
 }
@@ -92,6 +143,13 @@ function removeNote(col: RetroColumn, index: number) {
 function handleEnter(col: RetroColumn, event: KeyboardEvent) {
   event.preventDefault()
   addNote(col)
+}
+
+// Determine if the current user can delete a note
+function canRemove(note: RetroNote): boolean {
+  if (isProjectHead.value) return true
+  // owner can always remove their own (even if posted anonymously)
+  return note.author === currentAuthor.value
 }
 
 // ── Fetch ─────────────────────────────────────────────────────────────────────
@@ -111,17 +169,25 @@ async function fetchRetroNotes() {
 
     if (data.retrospective_notes) {
       try {
-        const parsed =
+        const raw =
           typeof data.retrospective_notes === 'string'
             ? JSON.parse(data.retrospective_notes)
             : data.retrospective_notes
+
+        // Migrate old string[] notes to new RetroNote[] shape
+        const toNoteList = (arr: unknown[]): RetroNote[] =>
+          (arr ?? []).map((n) =>
+            typeof n === 'string'
+              ? { text: n, author: 'Team', anonymous: false }
+              : (n as RetroNote),
+          )
+
         notes.value = {
-          went_well: parsed.went_well ?? [],
-          could_improve: parsed.could_improve ?? [],
-          action_items: parsed.action_items ?? [],
+          went_well: toNoteList(raw.went_well ?? []),
+          could_improve: toNoteList(raw.could_improve ?? []),
+          action_items: toNoteList(raw.action_items ?? []),
         }
       } catch {
-        // malformed JSON — start fresh
         notes.value = { went_well: [], could_improve: [], action_items: [] }
       }
     }
@@ -242,9 +308,15 @@ const columns: ColConfig[] = [
               :key="index"
               class="note-item"
             >
-              <span class="note-text">{{ note }}</span>
+              <div class="note-body">
+                <span class="note-text">{{ note.text }}</span>
+                <span class="note-author">
+                  <i class="pi pi-user author-icon" />
+                  {{ note.anonymous ? 'Anonymous' : note.author }}
+                </span>
+              </div>
               <button
-                v-if="isProjectHead || true"
+                v-if="canRemove(note)"
                 class="note-remove"
                 title="Remove note"
                 @click="removeNote(col.key, index)"
@@ -260,23 +332,67 @@ const columns: ColConfig[] = [
           </div>
 
           <!-- Add note input -->
-          <div class="add-note-row">
-            <InputText
-              v-model="newNote[col.key]"
-              :placeholder="col.inputPlaceholder"
-              class="note-input"
-              @keydown.enter="handleEnter(col.key, $event)"
-            />
-            <Button
-              icon="pi pi-plus"
-              class="add-btn"
-              :disabled="!newNote[col.key].trim()"
-              @click="addNote(col.key)"
-              aria-label="Add note"
-            />
+          <div class="add-note-area">
+            <div class="add-note-row">
+              <InputText
+                v-model="newNote[col.key]"
+                :placeholder="col.inputPlaceholder"
+                class="note-input"
+                @keydown.enter="handleEnter(col.key, $event)"
+              />
+              <Button
+                icon="pi pi-plus"
+                class="add-btn"
+                :disabled="!newNote[col.key].trim()"
+                aria-label="Add note"
+                @click="addNote(col.key)"
+              />
+            </div>
+            <label class="anon-toggle">
+              <Checkbox
+                v-model="postAnonymous[col.key]"
+                :binary="true"
+                class="anon-checkbox"
+              />
+              <span class="anon-label">Post anonymously</span>
+            </label>
           </div>
         </div>
       </div>
+
+      <!-- ── AI Retro Summary ─────────────────────────────────────────────── -->
+      <div class="summary-card">
+        <div class="summary-header">
+          <span class="summary-title">
+            <i class="pi pi-sparkles" />
+            AI Retrospective Summary
+          </span>
+          <Button
+            :label="retroSummary ? 'Regenerate' : 'Generate Summary'"
+            icon="pi pi-refresh"
+            size="small"
+            text
+            :loading="generatingSummary"
+            @click="generateRetroSummary"
+          />
+        </div>
+
+        <div v-if="generatingSummary" class="centered-sm">
+          <ProgressSpinner style="width:28px;height:28px" />
+        </div>
+
+        <Message v-else-if="summaryError" severity="error" :closable="false" class="summary-msg">
+          {{ summaryError }}
+        </Message>
+
+        <div v-else-if="retroSummary" class="summary-text">{{ retroSummary }}</div>
+
+        <div v-else class="summary-empty">
+          <i class="pi pi-file-edit summary-empty-icon" />
+          <p>Click <strong>Generate Summary</strong> to get an AI-written overview of the team's retrospective notes.</p>
+        </div>
+      </div>
+
     </template>
   </div>
 </template>
@@ -352,7 +468,6 @@ const columns: ColConfig[] = [
   grid-template-columns: repeat(3, 1fr);
   gap: 1rem;
   align-items: flex-start;
-  flex: 1;
 }
 
 @media (max-width: 900px) {
@@ -365,12 +480,10 @@ const columns: ColConfig[] = [
   border-radius: 10px;
   display: flex;
   flex-direction: column;
-  gap: 0;
   box-shadow: 0 0 0 1px var(--su-border), 0 0 12px 2px rgba(124, 58, 237, 0.1);
   overflow: hidden;
 }
 
-/* column accent top borders */
 .col--success { border-top: 2px solid var(--su-success); }
 .col--warn    { border-top: 2px solid var(--su-warning); }
 .col--info    { border-top: 2px solid #38bdf8; }
@@ -431,12 +544,32 @@ const columns: ColConfig[] = [
   border-color: var(--su-border-glow);
 }
 
-.note-text {
+.note-body {
   flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  min-width: 0;
+}
+
+.note-text {
   font-size: 0.85rem;
   color: var(--su-text);
   line-height: 1.5;
   word-break: break-word;
+}
+
+.note-author {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: 0.7rem;
+  color: var(--su-text-muted);
+}
+
+.author-icon {
+  font-size: 0.65rem;
+  opacity: 0.7;
 }
 
 .note-remove {
@@ -450,6 +583,7 @@ const columns: ColConfig[] = [
   font-size: 0.7rem;
   transition: color 0.15s, background 0.15s;
   line-height: 1;
+  margin-top: 0.1rem;
 }
 
 .note-remove:hover {
@@ -472,14 +606,20 @@ const columns: ColConfig[] = [
   opacity: 0.4;
 }
 
-/* ── Add note row ──────────────────────────────────────────────────────────── */
+/* ── Add note area ─────────────────────────────────────────────────────────── */
+
+.add-note-area {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  padding: 0.6rem 0.75rem;
+  border-top: 1px solid var(--su-border);
+  background: var(--su-bg-elevated);
+}
 
 .add-note-row {
   display: flex;
   gap: 0.4rem;
-  padding: 0.6rem 0.75rem;
-  border-top: 1px solid var(--su-border);
-  background: var(--su-bg-elevated);
 }
 
 .note-input {
@@ -500,8 +640,103 @@ const columns: ColConfig[] = [
   box-shadow: 0 0 0 2px rgba(124, 58, 237, 0.3);
 }
 
-.add-btn {
-  flex-shrink: 0;
+.add-btn { flex-shrink: 0; }
+
+/* ── Anonymous toggle ──────────────────────────────────────────────────────── */
+
+.anon-toggle {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  cursor: pointer;
+  user-select: none;
+  width: fit-content;
+}
+
+.anon-label {
+  font-size: 0.75rem;
+  color: var(--su-text-muted);
+}
+
+.anon-toggle:hover .anon-label {
+  color: var(--su-text);
+}
+
+:deep(.anon-checkbox .p-checkbox-box) {
+  background: var(--su-bg-surface);
+  border-color: var(--su-border);
+  width: 14px;
+  height: 14px;
+}
+
+:deep(.anon-checkbox .p-checkbox-box.p-highlight) {
+  background: rgba(124, 58, 237, 0.8);
+  border-color: var(--su-border-glow);
+}
+
+/* ── AI Summary card ───────────────────────────────────────────────────────── */
+
+.summary-card {
+  background: var(--su-bg-surface);
+  border: 1px solid var(--su-border);
+  border-radius: 10px;
+  padding: 1.1rem 1.25rem;
+  box-shadow: 0 0 0 1px var(--su-border), 0 0 12px 2px rgba(124, 58, 237, 0.1);
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+}
+
+.summary-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.summary-title {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.82rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--su-purple-300);
+}
+
+.summary-text {
+  font-size: 0.875rem;
+  color: var(--su-text);
+  line-height: 1.75;
+  white-space: pre-wrap;
+  background: var(--su-bg-elevated);
+  border: 1px solid var(--su-border);
+  border-radius: 8px;
+  padding: 0.85rem 1rem;
+}
+
+.summary-msg { margin: 0; }
+
+.summary-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 1rem 0;
+  text-align: center;
+}
+
+.summary-empty-icon {
+  font-size: 1.5rem;
+  color: var(--su-border-glow);
+  opacity: 0.6;
+}
+
+.summary-empty p {
+  margin: 0;
+  font-size: 0.82rem;
+  color: var(--su-text-muted);
 }
 
 /* ── Misc ──────────────────────────────────────────────────────────────────── */
@@ -510,6 +745,12 @@ const columns: ColConfig[] = [
   display: flex;
   justify-content: center;
   padding: 4rem 0;
+}
+
+.centered-sm {
+  display: flex;
+  justify-content: center;
+  padding: 0.75rem 0;
 }
 
 .mb-4 { margin-bottom: 1rem; }
