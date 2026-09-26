@@ -309,7 +309,7 @@ Allow each developer to have a profile that is auto-populated from their GitHub 
 
 ## Sub-Task 6 — Team Management
 
-**Status:** `[ ] pending`
+**Status:** `[x] complete`
 
 **Intent:**
 Allow super-admins to manage teams (created in Sub-Task 4) and give project heads visibility into their assigned teams and team members' profiles. This is the prerequisite for project creation — a project must be assigned to a team.
@@ -575,7 +575,7 @@ Implement the four required dashboard charts: burndown chart, velocity chart, co
 
 ## Sub-Task 13 — AI Sprint Summaries
 
-**Status:** `[ ] pending`
+**Status:** `[x] complete`
 
 **Intent:**
 Generate AI-written natural language summaries for each sprint and for the project as a whole. These are used in sprint reviews and retrospectives. The summary is generated on demand by the project head and stored in the database.
