@@ -104,6 +104,7 @@ const loading = computed(() => projectsStore.loading || homeStore.loading)
           shape="circle"
           size="xlarge"
           class="user-avatar"
+          :aria-label="`Avatar of ${profileStore.profile?.display_name ?? 'user'}`"
         />
         <Avatar
           v-else
@@ -111,6 +112,7 @@ const loading = computed(() => projectsStore.loading || homeStore.loading)
           shape="circle"
           size="xlarge"
           class="user-avatar avatar-fallback"
+          aria-hidden="true"
         />
       </div>
       <div class="welcome-text">
@@ -127,21 +129,22 @@ const loading = computed(() => projectsStore.loading || homeStore.loading)
     </div>
 
     <!-- ── Loading ──────────────────────────────────────────────────────── -->
-    <div v-if="loading" class="centered">
+    <div v-if="loading" class="centered" role="status" aria-label="Loading dashboard">
       <ProgressSpinner />
     </div>
 
     <template v-else>
 
       <!-- ── My Projects ──────────────────────────────────────────────── -->
-      <section class="dashboard-section">
+      <section class="dashboard-section" aria-labelledby="projects-heading">
         <div class="section-heading-row">
-          <h2 class="section-heading">My Projects</h2>
+          <h2 id="projects-heading" class="section-heading">My Projects</h2>
           <Button
             label="All Projects"
             icon="pi pi-arrow-right"
             text
             size="small"
+            aria-label="View all projects"
             @click="router.push({ name: 'projects' })"
           />
         </div>
@@ -151,23 +154,28 @@ const loading = computed(() => projectsStore.loading || homeStore.loading)
         </Message>
 
         <div v-else-if="projectsStore.myProjects.length === 0" class="empty-state">
-          <i class="pi pi-folder-open empty-icon" />
+          <i class="pi pi-folder-open empty-icon" aria-hidden="true" />
           <p class="empty-text">You're not on any projects yet.</p>
           <Button
             v-if="auth.role === 'project_head' || auth.role === 'super_admin'"
             label="Create a Project"
             icon="pi pi-plus"
             size="small"
+            aria-label="Create a new project"
             @click="router.push({ name: 'project-new' })"
           />
         </div>
 
-        <div v-else class="projects-grid">
+        <div v-else class="projects-grid" role="list">
           <div
             v-for="project in projectsStore.myProjects"
             :key="project.id"
             class="project-card"
+            role="listitem"
+            tabindex="0"
+            :aria-label="`Open project ${project.name}, status: ${project.status.replace('_', ' ')}`"
             @click="router.push({ name: 'project-detail', params: { id: project.id } })"
+            @keydown.enter.space.prevent="router.push({ name: 'project-detail', params: { id: project.id } })"
           >
             <div class="project-card-top">
               <span class="project-name">{{ project.name }}</span>
@@ -179,10 +187,10 @@ const loading = computed(() => projectsStore.loading || homeStore.loading)
             </div>
             <div class="project-meta">
               <span v-if="project.team_name">
-                <i class="pi pi-users" /> {{ project.team_name }}
+                <i class="pi pi-users" aria-hidden="true" /> {{ project.team_name }}
               </span>
               <span v-if="project.client_name">
-                <i class="pi pi-building" /> {{ project.client_name }}
+                <i class="pi pi-building" aria-hidden="true" /> {{ project.client_name }}
               </span>
             </div>
           </div>
@@ -190,28 +198,29 @@ const loading = computed(() => projectsStore.loading || homeStore.loading)
       </section>
 
       <!-- ── My Tasks ─────────────────────────────────────────────────── -->
-      <section class="dashboard-section">
-        <h2 class="section-heading">My Tasks (Active Sprints)</h2>
+      <section class="dashboard-section" aria-labelledby="tasks-heading">
+        <h2 id="tasks-heading" class="section-heading">My Tasks (Active Sprints)</h2>
 
         <Message v-if="homeStore.error" severity="error" :closable="false">
           {{ homeStore.error }}
         </Message>
 
         <div v-else-if="homeStore.myTasks.length === 0" class="empty-state">
-          <i class="pi pi-check-circle empty-icon" />
+          <i class="pi pi-check-circle empty-icon" aria-hidden="true" />
           <p class="empty-text">No tasks assigned to you in active sprints.</p>
         </div>
 
-        <div v-else class="tasks-container">
+        <div v-else class="tasks-container" role="list">
           <div
             v-for="group in tasksBySprint"
             :key="group.sprintId"
             class="sprint-group"
+            role="listitem"
           >
             <div class="sprint-group-header">
               <div class="sprint-group-label">
                 <span class="sprint-group-project">{{ group.projectName }}</span>
-                <i class="pi pi-chevron-right group-sep" />
+                <i class="pi pi-chevron-right group-sep" aria-hidden="true" />
                 <span class="sprint-group-sprint">{{ group.sprintName }}</span>
               </div>
               <Button
@@ -220,24 +229,27 @@ const loading = computed(() => projectsStore.loading || homeStore.loading)
                 text
                 size="small"
                 class="open-board-btn"
+                :aria-label="`Open kanban board for ${group.sprintName}`"
                 @click="router.push({ name: 'kanban', params: { id: group.projectId, sprintId: group.sprintId } })"
               />
             </div>
 
-            <div class="task-list">
+            <div class="task-list" role="list">
               <div
                 v-for="task in group.tasks"
                 :key="task.id"
                 class="task-row"
+                role="listitem"
+                :aria-label="`${task.title} — ${task.status.replace('_', ' ')}, priority: ${task.priority}`"
               >
-                <div class="task-status-dot" :class="`dot-${task.status}`" />
+                <div class="task-status-dot" :class="`dot-${task.status}`" :title="task.status.replace('_', ' ')" />
                 <span class="task-title">{{ task.title }}</span>
                 <Tag
                   :value="task.priority"
                   :severity="prioritySeverity(task.priority)"
                   class="priority-tag"
                 />
-                <span v-if="task.story_points" class="story-points">
+                <span v-if="task.story_points" class="story-points" :aria-label="`${task.story_points} story points`">
                   {{ task.story_points }}pt
                 </span>
               </div>
@@ -260,6 +272,11 @@ const loading = computed(() => projectsStore.loading || homeStore.loading)
   margin: 0 auto;
 }
 
+@media (max-width: 600px) {
+  .home-dashboard { padding: 1rem 0.75rem; }
+  .welcome-title { font-size: 1.1rem; }
+}
+
 /* ── Welcome header ── */
 .welcome-header {
   display: flex;
@@ -271,6 +288,7 @@ const loading = computed(() => projectsStore.loading || homeStore.loading)
   border: 1px solid var(--su-border);
   border-radius: 16px;
   box-shadow: 0 0 20px 4px rgba(124, 58, 237, 0.1);
+  flex-wrap: wrap;
 }
 
 :deep(.user-avatar.p-avatar) {
@@ -349,9 +367,11 @@ const loading = computed(() => projectsStore.loading || homeStore.loading)
   flex-direction: column;
   gap: 0.6rem;
 }
-.project-card:hover {
+.project-card:hover,
+.project-card:focus-visible {
   border-color: var(--su-border-glow);
   box-shadow: 0 0 16px 4px rgba(124, 58, 237, 0.25);
+  outline: none;
 }
 .project-card-top {
   display: flex;

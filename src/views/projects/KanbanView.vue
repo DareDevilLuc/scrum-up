@@ -140,7 +140,7 @@ watch(selectedSprintId, async (newId) => {
 
       <div class="header-content">
         <h1 class="page-title">
-          <i class="pi pi-table title-icon" />
+          <i class="pi pi-table title-icon" aria-hidden="true" />
           Kanban Board
         </h1>
 
@@ -153,6 +153,7 @@ watch(selectedSprintId, async (newId) => {
             option-value="value"
             placeholder="Select sprint"
             class="sprint-select"
+            aria-label="Select sprint"
           />
 
           <!-- Review / Retro links -->
@@ -160,12 +161,14 @@ watch(selectedSprintId, async (newId) => {
             label="Review"
             icon="pi pi-chart-bar"
             text
+            aria-label="Go to sprint review"
             @click="router.push({ name: 'sprint-review', params: { id: projectId, sprintId } })"
           />
           <Button
             label="Retro"
             icon="pi pi-comments"
             text
+            aria-label="Go to sprint retrospective"
             @click="router.push({ name: 'sprint-retro', params: { id: projectId, sprintId } })"
           />
 
@@ -174,6 +177,7 @@ watch(selectedSprintId, async (newId) => {
             v-if="isProjectHead"
             label="Add Task"
             icon="pi pi-plus"
+            aria-label="Add new task"
             @click="openCreateTask"
           />
         </div>
@@ -181,7 +185,7 @@ watch(selectedSprintId, async (newId) => {
     </div>
 
     <!-- Loading / error states -->
-    <div v-if="kanban.loading" class="centered">
+    <div v-if="kanban.loading" class="centered" role="status" aria-label="Loading tasks">
       <ProgressSpinner />
     </div>
 
@@ -190,12 +194,12 @@ watch(selectedSprintId, async (newId) => {
     </Message>
 
     <!-- Kanban columns -->
-    <div v-else class="kanban-board">
+    <div v-else class="kanban-board" role="region" aria-label="Kanban board">
       <!-- TO DO -->
-      <div class="kanban-column">
+      <div class="kanban-column" role="group" aria-label="To Do column">
         <div class="column-header">
           <span class="column-title">To Do</span>
-          <span class="column-count">{{ todoList.length }}</span>
+          <span class="column-count" aria-label="{{ todoList.length }} tasks">{{ todoList.length }}</span>
         </div>
         <draggable
           :list="todoList"
@@ -209,19 +213,20 @@ watch(selectedSprintId, async (newId) => {
             <TaskCard :task="element" @open="openTask" />
           </template>
           <template #footer>
-            <div v-if="todoList.length === 0" class="empty-col">
-              <i class="pi pi-inbox empty-col-icon" />
+            <div v-if="todoList.length === 0" class="empty-col" aria-label="No tasks in To Do">
+              <i class="pi pi-inbox empty-col-icon" aria-hidden="true" />
               <span>No tasks here</span>
+              <span class="empty-col-hint">Drag a task here</span>
             </div>
           </template>
         </draggable>
       </div>
 
       <!-- IN PROGRESS -->
-      <div class="kanban-column">
+      <div class="kanban-column" role="group" aria-label="In Progress column">
         <div class="column-header column-header--active">
           <span class="column-title">In Progress</span>
-          <span class="column-count">{{ inProgressList.length }}</span>
+          <span class="column-count" aria-label="{{ inProgressList.length }} tasks">{{ inProgressList.length }}</span>
         </div>
         <draggable
           :list="inProgressList"
@@ -235,19 +240,20 @@ watch(selectedSprintId, async (newId) => {
             <TaskCard :task="element" @open="openTask" />
           </template>
           <template #footer>
-            <div v-if="inProgressList.length === 0" class="empty-col">
-              <i class="pi pi-inbox empty-col-icon" />
+            <div v-if="inProgressList.length === 0" class="empty-col" aria-label="No tasks in progress">
+              <i class="pi pi-inbox empty-col-icon" aria-hidden="true" />
               <span>No tasks here</span>
+              <span class="empty-col-hint">Drag a task here</span>
             </div>
           </template>
         </draggable>
       </div>
 
       <!-- DONE -->
-      <div class="kanban-column">
+      <div class="kanban-column" role="group" aria-label="Done column">
         <div class="column-header column-header--done">
           <span class="column-title">Done</span>
-          <span class="column-count">{{ doneList.length }}</span>
+          <span class="column-count" aria-label="{{ doneList.length }} tasks">{{ doneList.length }}</span>
         </div>
         <draggable
           :list="doneList"
@@ -261,9 +267,10 @@ watch(selectedSprintId, async (newId) => {
             <TaskCard :task="element" @open="openTask" />
           </template>
           <template #footer>
-            <div v-if="doneList.length === 0" class="empty-col">
-              <i class="pi pi-inbox empty-col-icon" />
+            <div v-if="doneList.length === 0" class="empty-col" aria-label="No completed tasks">
+              <i class="pi pi-inbox empty-col-icon" aria-hidden="true" />
               <span>No tasks here</span>
+              <span class="empty-col-hint">Drag a task here</span>
             </div>
           </template>
         </draggable>
@@ -293,6 +300,7 @@ watch(selectedSprintId, async (newId) => {
   gap: 1.25rem;
 }
 
+/* ── Page header ── */
 .page-header {
   display: flex;
   align-items: flex-start;
@@ -339,17 +347,20 @@ watch(selectedSprintId, async (newId) => {
   min-width: 180px;
 }
 
+/* Sprint selector focus/hover — supplement global theme overrides */
 :deep(.sprint-select .p-select),
 :deep(.sprint-select.p-select) {
   background: var(--su-bg-surface);
   border-color: var(--su-border);
   color: var(--su-text);
+  transition: border-color 0.2s, box-shadow 0.2s;
 }
 
 :deep(.sprint-select .p-select:not(.p-disabled).p-focus),
 :deep(.sprint-select.p-select:not(.p-disabled).p-focus) {
   border-color: var(--su-border-glow);
   box-shadow: 0 0 0 2px rgba(124, 58, 237, 0.3);
+  outline: none;
 }
 
 .centered {
@@ -372,9 +383,29 @@ watch(selectedSprintId, async (newId) => {
   flex: 1;
 }
 
-@media (max-width: 900px) {
+/* Tablet: side-by-side pairs, then stack */
+@media (max-width: 1024px) and (min-width: 601px) {
+  .kanban-board {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 600px) {
+  .kanban-page {
+    padding: 1rem 0.75rem;
+  }
+
   .kanban-board {
     grid-template-columns: 1fr;
+  }
+
+  .header-content {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .header-actions {
+    width: 100%;
   }
 }
 
@@ -386,6 +417,12 @@ watch(selectedSprintId, async (newId) => {
   flex-direction: column;
   min-height: 200px;
   box-shadow: 0 0 0 1px var(--su-border), 0 0 12px 2px rgba(124, 58, 237, 0.1);
+  transition: box-shadow 0.2s;
+}
+
+/* Lift column on hover to signal it's a drop target */
+.kanban-column:focus-within {
+  box-shadow: 0 0 0 1px var(--su-border-glow), 0 0 16px 4px rgba(124, 58, 237, 0.25);
 }
 
 .column-header {
@@ -441,19 +478,31 @@ watch(selectedSprintId, async (newId) => {
   border-radius: 8px;
 }
 
+/* ── Empty column state ── */
 .empty-col {
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 0.4rem;
-  padding: 1.5rem 0;
+  padding: 2rem 0 1.5rem;
   color: var(--su-text-muted);
   font-size: 0.8rem;
   pointer-events: none;
 }
 
 .empty-col-icon {
-  font-size: 1.4rem;
-  opacity: 0.45;
+  font-size: 1.6rem;
+  opacity: 0.35;
+  color: var(--su-purple-400);
+}
+
+.empty-col-hint {
+  font-size: 0.72rem;
+  color: var(--su-border-glow);
+  opacity: 0.6;
+  border: 1px dashed var(--su-border-glow);
+  border-radius: 4px;
+  padding: 0.15rem 0.55rem;
+  margin-top: 0.1rem;
 }
 </style>
