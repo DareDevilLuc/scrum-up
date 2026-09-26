@@ -7,6 +7,7 @@ import Dropdown from 'primevue/dropdown'
 import InputNumber from 'primevue/inputnumber'
 import Message from 'primevue/message'
 import ProgressSpinner from 'primevue/progressspinner'
+import Dialog from 'primevue/dialog'
 import { useToast } from 'primevue/usetoast'
 import { supabase } from '@/lib/supabase'
 import { useProjectsStore } from '@/stores/projects'
@@ -117,14 +118,28 @@ function removeTask(sprintIndex: number, taskIndex: number) {
 }
 
 // ── Confirm plan ──────────────────────────────────────────────────────────────
+const showSuccessDialog = ref(false)
+const confirmedSprintCount = ref(0)
+const confirmedTaskCount = ref(0)
+
 async function handleConfirm() {
+  // Capture counts before confirm clears plan
+  const sprintCount = plan.value?.sprints.length ?? 0
+  const taskCount = plan.value?.sprints.reduce((sum, s) => sum + s.tasks.length, 0) ?? 0
+
   const ok = await confirmPlan(projectId)
   if (ok) {
-    toast.add({ severity: 'success', summary: 'Sprint plan saved!', detail: 'All sprints and tasks have been created.', life: 3000 })
-    router.push({ name: 'project-detail', params: { id: projectId } })
+    confirmedSprintCount.value = sprintCount
+    confirmedTaskCount.value = taskCount
+    showSuccessDialog.value = true
   } else {
     toast.add({ severity: 'error', summary: 'Save failed', detail: error.value ?? 'Unknown error', life: 5000 })
   }
+}
+
+function goToDashboard() {
+  showSuccessDialog.value = false
+  router.push({ name: 'project-detail', params: { id: projectId } })
 }
 
 // ── Priority colour helper ────────────────────────────────────────────────────
@@ -339,7 +354,50 @@ function priorityClass(p: string) {
         </div>
       </div>
     </template>
+
   </div>
+
+  <!-- ── Success Dialog ── -->
+  <Dialog
+    v-model:visible="showSuccessDialog"
+    :closable="false"
+    :modal="true"
+    :draggable="false"
+    class="success-dialog"
+    :style="{ width: '26rem' }"
+  >
+    <template #header>
+      <div class="success-header">
+        <i class="pi pi-check-circle success-icon" />
+        <span class="success-title">Plan Confirmed!</span>
+      </div>
+    </template>
+
+    <div class="success-body">
+      <p class="success-msg">Your sprint plan has been saved to the project.</p>
+      <div class="success-stats">
+        <div class="stat-chip">
+          <i class="pi pi-calendar" />
+          <span>{{ confirmedSprintCount }} sprint{{ confirmedSprintCount !== 1 ? 's' : '' }}</span>
+        </div>
+        <div class="stat-chip">
+          <i class="pi pi-check-square" />
+          <span>{{ confirmedTaskCount }} task{{ confirmedTaskCount !== 1 ? 's' : '' }}</span>
+        </div>
+      </div>
+    </div>
+
+    <template #footer>
+      <Button
+        label="Go to Project Dashboard"
+        icon="pi pi-arrow-right"
+        icon-pos="right"
+        class="w-full"
+        @click="goToDashboard"
+      />
+    </template>
+  </Dialog>
+
 </template>
 
 <style scoped>
@@ -512,4 +570,49 @@ function priorityClass(p: string) {
 
 /* ── Dropdown width ── */
 :deep(.p-dropdown) { width: 100%; }
+
+/* ── Success dialog ── */
+.success-header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+.success-icon {
+  font-size: 1.5rem;
+  color: var(--su-success, #22c55e);
+}
+.success-title {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--su-text);
+}
+.success-body {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  padding: 0.25rem 0 0.5rem;
+}
+.success-msg {
+  margin: 0;
+  color: var(--su-text-muted);
+  font-size: 0.9rem;
+  line-height: 1.6;
+}
+.success-stats {
+  display: flex;
+  gap: 0.75rem;
+}
+.stat-chip {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.35rem 0.75rem;
+  border-radius: 999px;
+  background: rgba(124, 58, 237, 0.12);
+  border: 1px solid rgba(124, 58, 237, 0.3);
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--su-purple-300);
+}
+.stat-chip i { font-size: 0.8rem; }
 </style>
