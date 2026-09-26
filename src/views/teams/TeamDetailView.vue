@@ -7,6 +7,7 @@ import Tag from 'primevue/tag'
 import ProgressSpinner from 'primevue/progressspinner'
 import Message from 'primevue/message'
 import { useTeamsStore } from '@/stores/teams'
+import type { TeamMemberProfile } from '@/stores/teams'
 import { useAuthStore } from '@/stores/auth'
 
 const route = useRoute()
@@ -25,6 +26,33 @@ function initials(name: string | null): string {
   if (!name) return '?'
   return name.split(' ').slice(0, 2).map((n) => n[0]?.toUpperCase() ?? '').join('')
 }
+
+// Group members by role for display
+const superAdmins = computed(() =>
+  teams.currentMembers.filter((m) => m.role === 'super_admin'),
+)
+const projectHeads = computed(() =>
+  teams.currentMembers.filter((m) => m.role === 'project_head'),
+)
+const developers = computed(() =>
+  teams.currentMembers.filter((m) => m.role === 'developer' || m.role === null),
+)
+
+interface RoleGroup {
+  label: string
+  icon: string
+  members: TeamMemberProfile[]
+  tagClass: string
+  tagLabel: string
+}
+
+const roleGroups = computed<RoleGroup[]>(() =>
+  [
+    { label: 'Super Admins', icon: 'pi pi-shield', members: superAdmins.value, tagClass: 'tag--admin', tagLabel: 'Super Admin' },
+    { label: 'Project Heads', icon: 'pi pi-star', members: projectHeads.value, tagClass: 'tag--head', tagLabel: 'Project Head' },
+    { label: 'Developers', icon: 'pi pi-code', members: developers.value, tagClass: 'tag--dev', tagLabel: 'Developer' },
+  ].filter((g) => g.members.length > 0),
+)
 </script>
 
 <template>
@@ -72,65 +100,79 @@ function initials(name: string | null): string {
       <p class="empty-text">No members in this team yet.</p>
     </div>
 
-    <!-- Members grid -->
-    <div v-else class="members-grid">
-      <div
-        v-for="member in teams.currentMembers"
-        :key="member.user_id"
-        class="member-card"
-        @click="router.push({ name: 'profile', params: { userId: member.user_id } })"
-      >
-        <!-- Avatar -->
-        <div class="member-avatar-wrap">
-          <Avatar
-            v-if="member.avatar_url"
-            :image="member.avatar_url"
-            shape="circle"
-            size="large"
-          />
-          <Avatar
-            v-else
-            :label="initials(member.display_name)"
-            shape="circle"
-            size="large"
-            class="avatar-fallback"
-          />
+    <!-- Members grouped by role -->
+    <template v-else>
+      <div v-for="group in roleGroups" :key="group.label" class="role-section">
+        <!-- Role group header -->
+        <div class="role-header">
+          <i :class="group.icon" class="role-icon" />
+          <span class="role-label">{{ group.label }}</span>
+          <span class="role-count">{{ group.members.length }}</span>
         </div>
 
-        <!-- Info -->
-        <div class="member-info">
-          <span class="member-name">{{ member.display_name ?? 'Unknown' }}</span>
-          <a
-            v-if="member.github_username"
-            :href="`https://github.com/${member.github_username}`"
-            target="_blank"
-            rel="noopener"
-            class="github-link"
-            @click.stop
+        <!-- Members grid -->
+        <div class="members-grid">
+          <div
+            v-for="member in group.members"
+            :key="member.user_id"
+            class="member-card"
+            @click="router.push({ name: 'profile', params: { userId: member.user_id } })"
           >
-            <i class="pi pi-github" />
-            {{ member.github_username }}
-          </a>
-        </div>
+            <!-- Avatar -->
+            <div class="member-avatar-wrap">
+              <Avatar
+                v-if="member.avatar_url"
+                :image="member.avatar_url"
+                shape="circle"
+                size="large"
+              />
+              <Avatar
+                v-else
+                :label="initials(member.display_name)"
+                shape="circle"
+                size="large"
+                class="avatar-fallback"
+              />
+            </div>
 
-        <!-- Tech stack tags -->
-        <div v-if="member.tech_stack?.length" class="tech-stack">
-          <Tag
-            v-for="tag in member.tech_stack.slice(0, 4)"
-            :key="tag"
-            :value="tag"
-            class="tech-tag"
-          />
-          <span v-if="member.tech_stack.length > 4" class="tech-more">
-            +{{ member.tech_stack.length - 4 }}
-          </span>
-        </div>
+            <!-- Info -->
+            <div class="member-info">
+              <span class="member-name">{{ member.display_name ?? 'Unknown' }}</span>
+              <!-- Role badge -->
+              <span class="role-badge" :class="group.tagClass">{{ group.tagLabel }}</span>
+              <a
+                v-if="member.github_username"
+                :href="`https://github.com/${member.github_username}`"
+                target="_blank"
+                rel="noopener"
+                class="github-link"
+                @click.stop
+              >
+                <i class="pi pi-github" />
+                {{ member.github_username }}
+              </a>
+            </div>
 
-        <div class="view-profile-hint">
-          <i class="pi pi-external-link" /> View profile
+            <!-- Tech stack tags -->
+            <div v-if="member.tech_stack?.length" class="tech-stack">
+              <Tag
+                v-for="tag in member.tech_stack.slice(0, 4)"
+                :key="tag"
+                :value="tag"
+                class="tech-tag"
+              />
+              <span v-if="member.tech_stack.length > 4" class="tech-more">
+                +{{ member.tech_stack.length - 4 }}
+              </span>
+            </div>
+
+            <div class="view-profile-hint">
+              <i class="pi pi-external-link" /> View profile
+            </div>
+          </div>
         </div>
       </div>
-    </div>
+    </template>
   </div>
 </template>
 
@@ -209,6 +251,74 @@ function initials(name: string | null): string {
   margin: 0;
   font-size: 0.95rem;
   color: var(--su-text-muted);
+}
+
+/* ── Role sections ─────────────────────────────────────────────────────────── */
+
+.role-section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.role-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding-bottom: 0.4rem;
+  border-bottom: 1px solid var(--su-border);
+}
+
+.role-icon {
+  font-size: 0.85rem;
+  color: var(--su-purple-400);
+}
+
+.role-label {
+  font-size: 0.82rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--su-purple-300);
+}
+
+.role-count {
+  background: rgba(124, 58, 237, 0.2);
+  color: var(--su-purple-300);
+  border-radius: 999px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 0.1rem 0.5rem;
+}
+
+/* ── Role badge on card ────────────────────────────────────────────────────── */
+
+.role-badge {
+  display: inline-block;
+  font-size: 0.65rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  border-radius: 999px;
+  padding: 0.1rem 0.5rem;
+}
+
+.tag--admin {
+  background: rgba(239, 68, 68, 0.15);
+  color: #f87171;
+  border: 1px solid rgba(239, 68, 68, 0.35);
+}
+
+.tag--head {
+  background: rgba(251, 191, 36, 0.15);
+  color: #fbbf24;
+  border: 1px solid rgba(251, 191, 36, 0.35);
+}
+
+.tag--dev {
+  background: rgba(124, 58, 237, 0.15);
+  color: var(--su-purple-300);
+  border: 1px solid rgba(124, 58, 237, 0.35);
 }
 
 /* ── Members grid ──────────────────────────────────────────────────────────── */
