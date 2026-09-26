@@ -340,7 +340,7 @@ Allow super-admins to manage teams (created in Sub-Task 4) and give project head
 
 ## Sub-Task 7 — Project Creation Flow
 
-**Status:** `[ ] pending`
+**Status:** `[x] complete`
 
 **Intent:**
 Build the project creation form that is only accessible to users with the `project_head` role. The form captures project name, requirements (free text), client, timeline (start/end dates), and the team to assign. On submission the project record is saved, sprints are not created yet (that is the AI planner in Sub-Task 8).
