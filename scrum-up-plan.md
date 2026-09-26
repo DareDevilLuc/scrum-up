@@ -414,7 +414,7 @@ Create the AI-powered sprint planning feature. Given the project requirements, t
 
 ## Sub-Task 9 — Task Kanban Board
 
-**Status:** `[ ] pending`
+**Status:** `[x] complete`
 
 **Intent:**
 Build a per-sprint Kanban board where developers can move their assigned tasks through `todo → in_progress → done` columns. Project heads can also create new tasks, reassign, and edit details. This is the day-to-day task tracking interface.

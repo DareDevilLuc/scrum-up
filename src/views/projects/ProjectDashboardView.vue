@@ -152,7 +152,7 @@ function initials(name: string): string {
 
             <!-- Sprint list -->
             <div v-else class="sprint-list">
-              <button
+              <div
                 v-for="sprint in dashboard.sprints"
                 :key="sprint.id"
                 class="sprint-item"
@@ -178,7 +178,16 @@ function initials(name: string): string {
                     :style="{ width: completionPercent(sprint) + '%' }"
                   />
                 </div>
-              </button>
+                <!-- Kanban board link -->
+                <Button
+                  label="Open Board"
+                  icon="pi pi-table"
+                  size="small"
+                  text
+                  class="board-btn"
+                  @click.stop="router.push({ name: 'kanban', params: { id: projectId, sprintId: sprint.id } })"
+                />
+              </div>
             </div>
           </div>
 
@@ -442,6 +451,13 @@ function initials(name: string): string {
   background: linear-gradient(90deg, #7c3aed, #a855f7);
   border-radius: 999px;
   transition: width 0.3s;
+}
+
+.board-btn {
+  align-self: flex-start;
+  margin-top: 0.25rem;
+  font-size: 0.75rem;
+  color: var(--su-purple-400);
 }
 
 /* ── Empty state ── */
