@@ -646,7 +646,7 @@ Generate AI-written natural language summaries for each sprint and for the proje
 
 ## Sub-Task 14 — Sprint Review and Retrospective Views
 
-**Status:** `[ ] pending`
+**Status:** `[x] complete`
 
 **Intent:**
 Build dedicated pages for sprint reviews and retrospectives. The review page is a presentation-ready view of sprint metrics and delivery. The retrospective page allows the team to record structured notes (went well, could improve, action items).

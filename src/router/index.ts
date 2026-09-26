@@ -95,6 +95,18 @@ const routes: RouteRecordRaw[] = [
     beforeEnter: requireAuth,
   },
   {
+    path: '/projects/:id/sprints/:sprintId/review',
+    name: 'sprint-review',
+    component: () => import('../views/projects/SprintReviewView.vue'),
+    beforeEnter: requireAuth,
+  },
+  {
+    path: '/projects/:id/sprints/:sprintId/retro',
+    name: 'sprint-retro',
+    component: () => import('../views/projects/SprintRetroView.vue'),
+    beforeEnter: requireAuth,
+  },
+  {
     path: '/projects/:id/plan-sprint',
     name: 'sprint-planner',
     component: () => import('../views/projects/SprintPlannerView.vue'),
