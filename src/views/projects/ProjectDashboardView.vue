@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, watch } from 'vue'
+import { onMounted, watch, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import Button from 'primevue/button'
 import Tag from 'primevue/tag'
@@ -7,7 +7,7 @@ import ProgressSpinner from 'primevue/progressspinner'
 import Message from 'primevue/message'
 import Avatar from 'primevue/avatar'
 import { useDashboardStore } from '@/stores/dashboard'
-import type { Sprint } from '@/stores/dashboard'
+import type { Sprint, SprintStatus } from '@/stores/dashboard'
 import MetricCard from '@/components/MetricCard.vue'
 
 const route = useRoute()
@@ -27,8 +27,23 @@ watch(() => route.params.id, async (newId) => {
   }
 })
 
+const statusUpdating = ref(false)
+const statusError = ref<string | null>(null)
+
 function selectSprint(sprint: Sprint) {
   dashboard.selectSprint(sprint)
+}
+
+async function changeSprintStatus(sprint: Sprint, status: SprintStatus) {
+  statusUpdating.value = true
+  statusError.value = null
+  try {
+    await dashboard.updateSprintStatus(sprint.id, status)
+  } catch (e) {
+    statusError.value = (e as Error).message
+  } finally {
+    statusUpdating.value = false
+  }
 }
 
 function sprintSeverity(status: Sprint['status']): string {
@@ -181,10 +196,51 @@ function goToGenerateSprints() {
             <i class="pi pi-flag sprint-goal__icon" />
             {{ dashboard.currentSprint.goal }}
           </p>
-          <span class="sprint-dates">
-            {{ formatDate(dashboard.currentSprint.start_date) }} – {{ formatDate(dashboard.currentSprint.end_date) }}
-          </span>
+          <div class="sprint-info__right">
+            <span class="sprint-dates">
+              {{ formatDate(dashboard.currentSprint.start_date) }} – {{ formatDate(dashboard.currentSprint.end_date) }}
+            </span>
+            <!-- Status controls — project head / super admin only -->
+            <div v-if="dashboard.isProjectHead" class="sprint-status-controls">
+              <Button
+                v-if="dashboard.currentSprint.status === 'planned'"
+                label="Start Sprint"
+                icon="pi pi-play"
+                size="small"
+                severity="success"
+                :loading="statusUpdating"
+                @click="changeSprintStatus(dashboard.currentSprint, 'active')"
+              />
+              <Button
+                v-if="dashboard.currentSprint.status === 'active'"
+                label="Complete Sprint"
+                icon="pi pi-check"
+                size="small"
+                severity="secondary"
+                :loading="statusUpdating"
+                @click="changeSprintStatus(dashboard.currentSprint, 'completed')"
+              />
+              <Button
+                v-if="dashboard.currentSprint.status === 'active' || dashboard.currentSprint.status === 'completed'"
+                label="Reopen"
+                icon="pi pi-replay"
+                size="small"
+                text
+                :loading="statusUpdating"
+                @click="changeSprintStatus(dashboard.currentSprint, 'planned')"
+              />
+            </div>
+          </div>
         </div>
+        <Message
+          v-if="statusError"
+          severity="error"
+          :closable="true"
+          class="status-error"
+          @close="statusError = null"
+        >
+          {{ statusError }}
+        </Message>
 
         <!-- ── Metrics Grid ──────────────────────────────────────────────── -->
         <div class="metrics-grid">
@@ -438,12 +494,29 @@ function goToGenerateSprints() {
   align-items: center;
   justify-content: space-between;
   gap: 1rem;
-  margin-bottom: 1.5rem;
+  margin-bottom: 0.5rem;
   padding: 0.75rem 1rem;
   background: var(--su-bg-surface);
   border: 1px solid var(--su-border);
   border-radius: 8px;
   flex-wrap: wrap;
+}
+
+.sprint-info__right {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.sprint-status-controls {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.status-error {
+  margin-bottom: 1rem;
 }
 
 .sprint-goal {

@@ -102,7 +102,23 @@ export const useDashboardStore = defineStore('dashboard', () => {
         .order('order', { ascending: true })
 
       if (sprintsError) throw sprintsError
-      sprints.value = sprintsData ?? []
+      const fetchedSprints: Sprint[] = sprintsData ?? []
+
+      // Auto-activate any planned sprint whose start_date is today or in the past
+      const today = new Date().toISOString().slice(0, 10)
+      const toActivate = fetchedSprints.filter(
+        (s) => s.status === 'planned' && s.start_date !== null && s.start_date <= today,
+      )
+      if (toActivate.length > 0) {
+        await Promise.all(
+          toActivate.map((s) =>
+            supabase.from('sprints').update({ status: 'active' }).eq('id', s.id),
+          ),
+        )
+        toActivate.forEach((s) => { s.status = 'active' })
+      }
+
+      sprints.value = fetchedSprints
 
       // Auto-select: prefer active sprint, else first planned, else first
       const active = sprints.value.find((s) => s.status === 'active')
@@ -142,6 +158,26 @@ export const useDashboardStore = defineStore('dashboard', () => {
       error.value = (e as Error).message
     } finally {
       loading.value = false
+    }
+  }
+
+  /**
+   * Manually set a sprint's status.
+   * Only project_head / super_admin should call this (enforced in the UI via isProjectHead).
+   * Patches the database and updates local state immediately so the view reacts.
+   */
+  async function updateSprintStatus(sprintId: string, status: SprintStatus) {
+    const { error: err } = await supabase
+      .from('sprints')
+      .update({ status })
+      .eq('id', sprintId)
+    if (err) throw err
+
+    const sprint = sprints.value.find((s) => s.id === sprintId)
+    if (sprint) sprint.status = status
+
+    if (currentSprint.value?.id === sprintId) {
+      currentSprint.value = { ...currentSprint.value, status }
     }
   }
 
@@ -198,6 +234,7 @@ export const useDashboardStore = defineStore('dashboard', () => {
     completionPercent,
     fetchProjectOverview,
     selectSprint,
+    updateSprintStatus,
     $reset,
   }
 })
