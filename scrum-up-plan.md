@@ -454,7 +454,7 @@ Build a per-sprint Kanban board where developers can move their assigned tasks t
 
 ## Sub-Task 10 — Project Dashboard Shell
 
-**Status:** `[ ] pending`
+**Status:** `[x] complete`
 
 **Intent:**
 Build the project-level dashboard that serves as the hub for all project metrics, sprint navigation, and GitHub data. This sub-task creates the layout and wires up the sprint selector; the actual chart components and GitHub feed are added in Sub-Tasks 11 and 12.
@@ -528,7 +528,7 @@ Allow a project head to link a GitHub repository to a project. Once linked, the 
 
 ## Sub-Task 12 — Metrics and Charts
 
-**Status:** `[ ] pending`
+**Status:** `[x] complete`
 
 **Intent:**
 Implement the four required dashboard charts: burndown chart, velocity chart, commit frequency chart, and a sprint completion summary. These visualize the incremental work data for sprint reviews and retrospectives.

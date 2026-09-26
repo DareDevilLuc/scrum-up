@@ -17,6 +17,7 @@ export interface Sprint {
   order: number
   task_count: number
   completed_task_count: number
+  completed_story_points: number
 }
 
 export interface TeamMemberStrip {
@@ -93,16 +94,23 @@ export const useDashboardStore = defineStore('dashboard', () => {
             .select('id', { count: 'exact', head: true })
             .eq('sprint_id', s.id)
 
-          const { count: doneCount } = await supabase
+          const { data: doneTasks } = await supabase
             .from('tasks')
-            .select('id', { count: 'exact', head: true })
+            .select('story_points')
             .eq('sprint_id', s.id)
             .eq('status', 'done')
+
+          const doneCount = doneTasks?.length ?? 0
+          const donePoints = (doneTasks ?? []).reduce(
+            (sum: number, t: any) => sum + (t.story_points ?? 0),
+            0,
+          )
 
           return {
             ...s,
             task_count: totalCount ?? 0,
-            completed_task_count: doneCount ?? 0,
+            completed_task_count: doneCount,
+            completed_story_points: donePoints,
           } as Sprint
         }),
       )
