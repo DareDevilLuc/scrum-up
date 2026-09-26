@@ -12,6 +12,7 @@ import type { Sprint } from '@/stores/dashboard'
 import MetricCard from '@/components/MetricCard.vue'
 import LinkRepoDialog from '@/components/LinkRepoDialog.vue'
 import GitHubActivityFeed from '@/components/GitHubActivityFeed.vue'
+import SprintSummaryPanel from '@/components/SprintSummaryPanel.vue'
 import ProjectSummaryPanel from '@/components/ProjectSummaryPanel.vue'
 import BurndownChart from '@/components/charts/BurndownChart.vue'
 import VelocityChart from '@/components/charts/VelocityChart.vue'
@@ -308,6 +309,14 @@ function initials(name: string): string {
             Select a sprint to see metrics.
           </div>
 
+          <!-- Sprint AI Summary -->
+          <div class="section-card summary-card">
+            <SprintSummaryPanel
+              :sprint-id="dashboard.currentSprint?.id ?? null"
+              :is-project-head="isProjectHead"
+            />
+          </div>
+
           <!-- GitHub repository card -->
           <div class="section-card github-card">
             <div class="section-heading-row">
@@ -348,6 +357,7 @@ function initials(name: string): string {
           <div class="section-card summary-card">
             <ProjectSummaryPanel
               :project-id="projectId"
+              :is-project-head="isProjectHead"
             />
           </div>
 

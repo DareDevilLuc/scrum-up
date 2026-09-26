@@ -56,7 +56,7 @@ const newNote = ref<Record<RetroColumn, string>>({
   action_items: '',
 })
 
-// Per-column anonymous toggle — shared across all columns but independent
+// Per-column anonymous toggle — independent per column
 const postAnonymous = ref<Record<RetroColumn, boolean>>({
   went_well: false,
   could_improve: false,
@@ -73,7 +73,7 @@ const currentAuthor = computed(() => {
     ?? 'Unknown'
 })
 
-// ── Retro AI summary ──────────────────────────────────────────────────────────
+// ── AI Retro Summary ──────────────────────────────────────────────────────────
 
 const retroSummary = ref<string | null>(null)
 const generatingSummary = ref(false)
@@ -140,16 +140,15 @@ function removeNote(col: RetroColumn, index: number) {
   scheduleSave()
 }
 
+// Owner can always remove their own (even if posted anonymously); project heads can remove any
+function canRemove(note: RetroNote): boolean {
+  if (isProjectHead.value) return true
+  return note.author === currentAuthor.value
+}
+
 function handleEnter(col: RetroColumn, event: KeyboardEvent) {
   event.preventDefault()
   addNote(col)
-}
-
-// Determine if the current user can delete a note
-function canRemove(note: RetroNote): boolean {
-  if (isProjectHead.value) return true
-  // owner can always remove their own (even if posted anonymously)
-  return note.author === currentAuthor.value
 }
 
 // ── Fetch ─────────────────────────────────────────────────────────────────────
@@ -331,7 +330,7 @@ const columns: ColConfig[] = [
             </div>
           </div>
 
-          <!-- Add note input -->
+          <!-- Add note area -->
           <div class="add-note-area">
             <div class="add-note-row">
               <InputText
@@ -349,11 +348,7 @@ const columns: ColConfig[] = [
               />
             </div>
             <label class="anon-toggle">
-              <Checkbox
-                v-model="postAnonymous[col.key]"
-                :binary="true"
-                class="anon-checkbox"
-              />
+              <Checkbox v-model="postAnonymous[col.key]" :binary="true" class="anon-checkbox" />
               <span class="anon-label">Post anonymously</span>
             </label>
           </div>
@@ -567,10 +562,7 @@ const columns: ColConfig[] = [
   color: var(--su-text-muted);
 }
 
-.author-icon {
-  font-size: 0.65rem;
-  opacity: 0.7;
-}
+.author-icon { font-size: 0.65rem; opacity: 0.7; }
 
 .note-remove {
   flex-shrink: 0;
@@ -658,9 +650,7 @@ const columns: ColConfig[] = [
   color: var(--su-text-muted);
 }
 
-.anon-toggle:hover .anon-label {
-  color: var(--su-text);
-}
+.anon-toggle:hover .anon-label { color: var(--su-text); }
 
 :deep(.anon-checkbox .p-checkbox-box) {
   background: var(--su-bg-surface);

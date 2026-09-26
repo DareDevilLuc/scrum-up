@@ -69,7 +69,11 @@ serve(async (req) => {
       )
     }
 
+<<<<<<< HEAD
     // Parse notes — support both old string[] format and new RetroNote[] format
+=======
+    // Parse notes — support both old string[] and new RetroNote[] formats
+>>>>>>> a6f33838d316b1b2b5cdebc15ab7c8dc6e92bf6a
     let notes: RetroNotes = { went_well: [], could_improve: [], action_items: [] }
     if (sprint.retrospective_notes) {
       try {
