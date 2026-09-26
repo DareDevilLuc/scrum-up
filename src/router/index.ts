@@ -71,8 +71,20 @@ const routes: RouteRecordRaw[] = [
     beforeEnter: requireAuth,
   },
   {
+    path: '/projects',
+    name: 'projects',
+    component: () => import('../views/projects/ProjectsListView.vue'),
+    beforeEnter: requireAuth,
+  },
+  {
+    path: '/projects/new',
+    name: 'project-new',
+    component: () => import('../views/projects/CreateProjectView.vue'),
+    beforeEnter: requireRole(['project_head', 'super_admin']),
+  },
+  {
     path: '/projects/:id',
-    name: 'project',
+    name: 'project-detail',
     component: () => import('../views/ProjectView.vue'),
     beforeEnter: requireAuth,
   },
