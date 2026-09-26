@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, computed } from 'vue'
+import { onMounted, onUnmounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import Avatar from 'primevue/avatar'
 import Tag from 'primevue/tag'
@@ -26,6 +26,11 @@ onMounted(async () => {
     projectsStore.fetchMyProjects(),
     homeStore.fetchMyTasks(userId),
   ])
+  homeStore.subscribeMyTasks(userId)
+})
+
+onUnmounted(() => {
+  homeStore.unsubscribeMyTasks()
 })
 
 // ── Helpers ───────────────────────────────────────────────────────────────────

@@ -1,6 +1,7 @@
 import { ref } from 'vue'
 import { defineStore } from 'pinia'
 import { supabase } from '@/lib/supabase'
+import type { RealtimeChannel } from '@supabase/supabase-js'
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -26,6 +27,8 @@ export const useHomeStore = defineStore('home', () => {
   const myTasks = ref<MyTask[]>([])
   const loading = ref(false)
   const error = ref<string | null>(null)
+  let _channel: RealtimeChannel | null = null
+  let _subscribedUserId: string | null = null
 
   // ── Actions ────────────────────────────────────────────────────────────────
 
@@ -85,11 +88,49 @@ export const useHomeStore = defineStore('home', () => {
     }
   }
 
+  /**
+   * Subscribe to realtime changes on task_assignments for the given user.
+   * Re-fetches myTasks on any INSERT or DELETE so the dashboard stays current.
+   * Safe to call multiple times — re-uses the existing channel for the same user.
+   */
+  function subscribeMyTasks(userId: string) {
+    if (_subscribedUserId === userId && _channel) return
+
+    // Clean up any previous channel first
+    unsubscribeMyTasks()
+
+    _subscribedUserId = userId
+    _channel = supabase
+      .channel(`my-task-assignments:${userId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'task_assignments',
+          filter: `user_id=eq.${userId}`,
+        },
+        () => {
+          fetchMyTasks(userId)
+        },
+      )
+      .subscribe()
+  }
+
+  function unsubscribeMyTasks() {
+    if (_channel) {
+      supabase.removeChannel(_channel)
+      _channel = null
+      _subscribedUserId = null
+    }
+  }
+
   function $reset() {
+    unsubscribeMyTasks()
     myTasks.value = []
     loading.value = false
     error.value = null
   }
 
-  return { myTasks, loading, error, fetchMyTasks, $reset }
+  return { myTasks, loading, error, fetchMyTasks, subscribeMyTasks, unsubscribeMyTasks, $reset }
 })
