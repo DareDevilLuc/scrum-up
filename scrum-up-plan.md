@@ -452,6 +452,40 @@ Build a per-sprint Kanban board where developers can move their assigned tasks t
 
 ---
 
+## Sub-Task 9b — User Home Dashboard
+
+**Status:** `[x] complete`
+
+**Intent:**
+Build the `/dashboard` page that serves as the personal home screen after login. It shows the user's own projects and their assigned tasks across all active sprints, giving them an at-a-glance view of what to work on next.
+
+**Expected Outcomes:**
+- `/dashboard` renders a personalised home page with: welcome header (display name, avatar, role badge), "My Projects" panel, and "My Tasks" panel
+- My Projects: lists all projects the current user is a member of (via team membership or `created_by`), each card shows name, status, team name, and sprint count; clicking navigates to `/projects/:id`
+- My Tasks: lists tasks assigned to the user across all active sprints, grouped by sprint, each item shows title, priority badge, story points, and a link to the Kanban board
+- Empty states shown when there are no projects or assigned tasks
+
+**Todo List:**
+1. Create `src/stores/home.ts` — Pinia setup store:
+   - `fetchMyProjects(userId)` — queries projects where user is a team member or `created_by`
+   - `fetchMyTasks(userId)` — queries `task_assignments` joined to `tasks`, `sprints`, `projects` filtered to `sprints.status = 'active'`
+   - Exposes `myProjects`, `myTasks`, `loading`, `error`
+2. Create `src/views/DashboardView.vue` — replace the placeholder:
+   - Welcome header: avatar (`Avatar` component), display name, role `Tag`
+   - "My Projects" section: responsive card grid using project data from store
+   - "My Tasks" section: list of task rows grouped by sprint name, each with priority badge and "Open Board" link
+   - Uses `useAuthStore` for current user identity
+   - Loading spinner and empty states for both panels
+3. No new routes needed — `/dashboard` already exists in the router
+
+**Relevant Context:**
+- `team_members`, `projects`, `tasks`, `task_assignments`, `sprints` tables from Sub-Task 3
+- `useAuthStore` for `auth.user.id` and `auth.role`
+- PrimeVue `Avatar`, `Tag`, `Card`, `Badge` components
+- Links into existing `project-detail` and `kanban` named routes
+
+---
+
 ## Sub-Task 10 — Project Dashboard Shell
 
 **Status:** `[x] complete`
@@ -652,6 +686,7 @@ Build dedicated pages for sprint reviews and retrospectives. The review page is 
 1 (Scaffold) → 2 (Auth) → 3 (Schema) → 4 (Admin) → 6 (Teams)
                                       ↘ 5 (Profiles) ↗
 3 (Schema) → 7 (Project Creation) → 8 (AI Planner) → 9 (Kanban)
+                                                    → 9b (Home Dashboard)
 7 → 10 (Dashboard Shell) → 11 (GitHub) → 12 (Charts)
                           → 12 (Charts)
 11 + 12 → 13 (AI Summaries) → 14 (Review + Retro)
