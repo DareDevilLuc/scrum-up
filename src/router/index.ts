@@ -85,7 +85,7 @@ const routes: RouteRecordRaw[] = [
   {
     path: '/projects/:id',
     name: 'project-detail',
-    component: () => import('../views/ProjectView.vue'),
+    component: () => import('../views/projects/ProjectDashboardView.vue'),
     beforeEnter: requireAuth,
   },
   {
