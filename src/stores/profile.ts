@@ -20,6 +20,8 @@ export interface DeveloperProfile {
   experience_years: number | null
   portfolio_url: string | null
   github_repos: GithubRepo[] | null
+  /** Only populated when fetching the authenticated user's own profile */
+  private_github_repos: GithubRepo[] | null
   languages: Record<string, number> | null
   // joined from users table
   display_name: string | null
@@ -42,7 +44,7 @@ export const useProfileStore = defineStore('profile', () => {
    * Fetch a developer profile by user ID.
    * Joins with the users table to include display_name, avatar_url, github_username.
    */
-  async function fetchProfile(userId: string) {
+  async function fetchProfile(userId: string, isOwnProfile = false) {
     loading.value = true
     error.value = null
     try {
@@ -55,6 +57,7 @@ export const useProfileStore = defineStore('profile', () => {
           experience_years,
           portfolio_url,
           github_repos,
+          private_github_repos,
           languages,
           users (
             display_name,
@@ -85,6 +88,9 @@ export const useProfileStore = defineStore('profile', () => {
         experience_years: data.experience_years as number | null,
         portfolio_url: data.portfolio_url as string | null,
         github_repos: data.github_repos as GithubRepo[] | null,
+        private_github_repos: isOwnProfile
+          ? (data as Record<string, unknown>).private_github_repos as GithubRepo[] | null
+          : null,
         languages: data.languages as Record<string, number> | null,
         display_name: user?.display_name ?? null,
         avatar_url: user?.avatar_url ?? null,
@@ -134,8 +140,8 @@ export const useProfileStore = defineStore('profile', () => {
         body: { user_id: userId },
       })
       if (fnError) throw fnError
-      // Re-fetch to pick up the newly synced data
-      await fetchProfile(userId)
+      // Re-fetch to pick up the newly synced data (own profile — include private repos)
+      await fetchProfile(userId, true)
     } catch (e) {
       error.value = (e as Error).message
     } finally {
