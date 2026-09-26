@@ -26,6 +26,7 @@ export interface TeamMemberProfile {
   avatar_url: string | null
   github_username: string | null
   tech_stack: string[] | null
+  role: 'project_head' | 'developer' | 'super_admin' | null
 }
 
 // ── Store ─────────────────────────────────────────────────────────────────────
@@ -162,6 +163,31 @@ export const useTeamsStore = defineStore('teams', () => {
         }
       }
 
+      // Fetch roles: look for project_head scoped to this team, or super_admin global
+      let roleMap: Record<string, 'project_head' | 'developer' | 'super_admin'> = {}
+      if (userIds.length > 0) {
+        const { data: rolesData } = await supabase
+          .from('user_roles')
+          .select('user_id, role, scope_type, scope_id')
+          .in('user_id', userIds)
+
+        for (const r of rolesData ?? []) {
+          const existing = roleMap[r.user_id]
+          // Priority: super_admin > project_head > developer
+          if (r.role === 'super_admin' && r.scope_type === 'global') {
+            roleMap[r.user_id] = 'super_admin'
+          } else if (
+            r.role === 'project_head' &&
+            (r.scope_id === teamId || r.scope_type === 'global') &&
+            existing !== 'super_admin'
+          ) {
+            roleMap[r.user_id] = 'project_head'
+          } else if (!existing) {
+            roleMap[r.user_id] = 'developer'
+          }
+        }
+      }
+
       currentMembers.value = (membersData ?? []).map((m: any) => ({
         user_id: m.user_id,
         joined_at: m.joined_at,
@@ -169,6 +195,7 @@ export const useTeamsStore = defineStore('teams', () => {
         avatar_url: m.users?.avatar_url ?? null,
         github_username: m.users?.github_username ?? null,
         tech_stack: profileMap[m.user_id] ?? null,
+        role: roleMap[m.user_id] ?? 'developer',
       }))
     } catch (e) {
       error.value = (e as Error).message

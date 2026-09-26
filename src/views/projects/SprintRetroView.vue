@@ -29,8 +29,8 @@ const isProjectHead = computed(
 
 interface RetroNote {
   text: string
-  author: string
-  anonymous: boolean
+  author: string       // display_name of the submitter
+  anonymous: boolean   // if true, show "Anonymous" instead of author name
 }
 
 interface RetroNotes {
@@ -56,14 +56,14 @@ const newNote = ref<Record<RetroColumn, string>>({
   action_items: '',
 })
 
-// Per-column anonymous toggle
+// Per-column anonymous toggle — independent per column
 const postAnonymous = ref<Record<RetroColumn, boolean>>({
   went_well: false,
   could_improve: false,
   action_items: false,
 })
 
-// Current user display name
+// Current user's display name (fallback to email prefix)
 const currentAuthor = computed(() => {
   const user = auth.user
   if (!user) return 'Unknown'
@@ -140,6 +140,7 @@ function removeNote(col: RetroColumn, index: number) {
   scheduleSave()
 }
 
+// Owner can always remove their own (even if posted anonymously); project heads can remove any
 function canRemove(note: RetroNote): boolean {
   if (isProjectHead.value) return true
   return note.author === currentAuthor.value
@@ -171,12 +172,15 @@ async function fetchRetroNotes() {
           typeof data.retrospective_notes === 'string'
             ? JSON.parse(data.retrospective_notes)
             : data.retrospective_notes
+
+        // Migrate old string[] notes to new RetroNote[] shape
         const toNoteList = (arr: unknown[]): RetroNote[] =>
           (arr ?? []).map((n) =>
             typeof n === 'string'
               ? { text: n, author: 'Team', anonymous: false }
               : (n as RetroNote),
           )
+
         notes.value = {
           went_well: toNoteList(raw.went_well ?? []),
           could_improve: toNoteList(raw.could_improve ?? []),
@@ -350,7 +354,8 @@ const columns: ColConfig[] = [
           </div>
         </div>
       </div>
-      <!-- ── AI Retro Summary ───────────────────────────────────────────────── -->
+
+      <!-- ── AI Retro Summary ─────────────────────────────────────────────── -->
       <div class="summary-card">
         <div class="summary-header">
           <span class="summary-title">
@@ -370,10 +375,13 @@ const columns: ColConfig[] = [
         <div v-if="generatingSummary" class="centered-sm">
           <ProgressSpinner style="width:28px;height:28px" />
         </div>
+
         <Message v-else-if="summaryError" severity="error" :closable="false" class="summary-msg">
           {{ summaryError }}
         </Message>
+
         <div v-else-if="retroSummary" class="summary-text">{{ retroSummary }}</div>
+
         <div v-else class="summary-empty">
           <i class="pi pi-file-edit summary-empty-icon" />
           <p>Click <strong>Generate Summary</strong> to get an AI-written overview of the team's retrospective notes.</p>
@@ -455,7 +463,6 @@ const columns: ColConfig[] = [
   grid-template-columns: repeat(3, 1fr);
   gap: 1rem;
   align-items: flex-start;
-  flex: 1;
 }
 
 @media (max-width: 900px) {
@@ -468,12 +475,10 @@ const columns: ColConfig[] = [
   border-radius: 10px;
   display: flex;
   flex-direction: column;
-  gap: 0;
   box-shadow: 0 0 0 1px var(--su-border), 0 0 12px 2px rgba(124, 58, 237, 0.1);
   overflow: hidden;
 }
 
-/* column accent top borders */
 .col--success { border-top: 2px solid var(--su-success); }
 .col--warn    { border-top: 2px solid var(--su-warning); }
 .col--info    { border-top: 2px solid #38bdf8; }
@@ -534,13 +539,30 @@ const columns: ColConfig[] = [
   border-color: var(--su-border-glow);
 }
 
-.note-text {
+.note-body {
   flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  min-width: 0;
+}
+
+.note-text {
   font-size: 0.85rem;
   color: var(--su-text);
   line-height: 1.5;
   word-break: break-word;
 }
+
+.note-author {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: 0.7rem;
+  color: var(--su-text-muted);
+}
+
+.author-icon { font-size: 0.65rem; opacity: 0.7; }
 
 .note-remove {
   flex-shrink: 0;
@@ -553,6 +575,7 @@ const columns: ColConfig[] = [
   font-size: 0.7rem;
   transition: color 0.15s, background 0.15s;
   line-height: 1;
+  margin-top: 0.1rem;
 }
 
 .note-remove:hover {
@@ -574,24 +597,6 @@ const columns: ColConfig[] = [
   font-size: 1.4rem;
   opacity: 0.4;
 }
-
-.note-body {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  gap: 0.2rem;
-  min-width: 0;
-}
-
-.note-author {
-  display: flex;
-  align-items: center;
-  gap: 0.25rem;
-  font-size: 0.7rem;
-  color: var(--su-text-muted);
-}
-
-.author-icon { font-size: 0.65rem; opacity: 0.7; }
 
 /* ── Add note area ─────────────────────────────────────────────────────────── */
 
