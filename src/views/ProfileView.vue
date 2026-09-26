@@ -186,7 +186,7 @@ const chartOptions = {
         <div class="profile-card" v-if="profileStore.profile.github_repos?.length">
           <h2 class="card-title">Top Repositories</h2>
           <div class="repo-list">
-            <a
+          <a  
               v-for="repo in profileStore.profile.github_repos"
               :key="repo.full_name"
               :href="repo.url"
@@ -267,6 +267,8 @@ const chartOptions = {
   padding: 2rem;
   max-width: 1000px;
   margin: 0 auto;
+  overflow-x: hidden;
+  box-sizing: border-box;
 }
 
 /* ── Loading / empty states ── */
@@ -324,6 +326,7 @@ const chartOptions = {
 
 .profile-header-info {
   flex: 1;
+  min-width: 0;
   display: flex;
   flex-direction: column;
   gap: 0.35rem;
@@ -366,13 +369,13 @@ const chartOptions = {
 /* ── Grid layout ── */
 .profile-grid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   gap: 1.25rem;
 }
 
 @media (max-width: 700px) {
   .profile-grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
   }
 }
 
@@ -383,6 +386,8 @@ const chartOptions = {
   border-radius: 12px;
   padding: 1.5rem;
   box-shadow: 0 0 0 1px var(--su-border), 0 0 12px 2px rgba(124, 58, 237, 0.12);
+  min-width: 0;
+  box-sizing: border-box;
 }
 
 .profile-card--edit {
@@ -401,6 +406,8 @@ const chartOptions = {
 /* ── Chart ── */
 .chart-wrapper {
   height: 200px;
+  width: 100%;
+  overflow: hidden;
   position: relative;
 }
 
@@ -424,6 +431,7 @@ const chartOptions = {
   text-decoration: none;
   color: var(--su-text);
   transition: border-color 0.15s, box-shadow 0.15s;
+  min-width: 0;
 }
 
 .repo-item:hover {
@@ -435,6 +443,7 @@ const chartOptions = {
   display: flex;
   align-items: center;
   gap: 0.5rem;
+  min-width: 0;
 }
 
 .repo-name {
@@ -481,18 +490,19 @@ const chartOptions = {
   flex-direction: column;
   gap: 0.4rem;
   margin-bottom: 1rem;
+  min-width: 0;
 }
 
 .form-row {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   gap: 1rem;
   margin-bottom: 1rem;
 }
 
 @media (max-width: 500px) {
   .form-row {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
   }
 }
 
